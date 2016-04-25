@@ -1,0 +1,7 @@
+id|type|details
+1|name|zabbix-2.4-ZBXNEXT-1061-1
+1|f|y
+1|desc|Adds pin/unpin icon that allows keeping the time period when switching between graphs and screens
+1|ltr|3
+1|extra|pinset.png images/general/bttn/
+1|extra|pinunset.png images/general/bttn/

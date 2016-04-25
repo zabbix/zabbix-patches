@@ -1,0 +1,346 @@
+diff --git a/frontends/php/charts.php b/frontends/php/charts.php
+index cc8ea00..9a807f4 100644
+--- a/frontends/php/charts.php
++++ b/frontends/php/charts.php
+@@ -47,7 +47,8 @@ $fields = array(
+ 	'filterState' => array(T_ZBX_INT, O_OPT, P_ACT, null,		null),
+ 	'favobj' =>		array(T_ZBX_STR, O_OPT, P_ACT, null,		null),
+ 	'favid' =>		array(T_ZBX_INT, O_OPT, P_ACT, null,		null),
+-	'favaction' =>	array(T_ZBX_STR, O_OPT, P_ACT, IN('"add","remove"'), null)
++	'favaction' =>	array(T_ZBX_STR, O_OPT, P_ACT, IN('"add","remove"'), null),
++	'pinned' =>     array(T_ZBX_INT, O_OPT, P_SYS, NULL, null)
+ );
+ check_fields($fields);
+ 
+@@ -119,6 +120,23 @@ if (isset($_REQUEST['favobj'])) {
+ 	}
+ }
+ 
++if (isset($_REQUEST['pinned'])) {
++	if ($_REQUEST['pinned'] == 0) {
++		CProfile::update('web.common.pinned.set', getRequest('pinned'), PROFILE_TYPE_INT);
++		echo '$("upd_pin").title = "'._('Pin period').'";'."\n";
++		echo '$("upd_pin").onclick = function() { update_pinned_status(1); }'."\n";
++		echo 'switchElementClass("upd_pin", "iconpinunset", "iconpinset");';
++	}
++	elseif ($_REQUEST['pinned'] == 1) {
++		CProfile::update('web.common.pinned.set', getRequest('pinned'), PROFILE_TYPE_INT);
++		echo '$("upd_pin").title = "'._('Unpin period').'";'."\n";
++		echo '$("upd_pin").onclick = function() { update_pinned_status(0); }'."\n";
++		echo 'switchElementClass("upd_pin", "iconpinset", "iconpinunset");';
++	}
++} else {
++	$_REQUEST['pinned'] = CProfile::get('web.common.pinned.set', 0);
++}
++
+ if (!empty($_REQUEST['period']) || !empty($_REQUEST['stime'])) {
+ 	CScreenBase::calculateTime(array(
+ 		'profileIdx' => 'web.screens',
+@@ -154,7 +172,8 @@ if ($page['type'] == PAGE_TYPE_JS || $page['type'] == PAGE_TYPE_HTML_BLOCK) {
+ $data = array(
+ 	'pageFilter' => $pageFilter,
+ 	'graphid' => $pageFilter->graphid,
+-	'fullscreen' => $_REQUEST['fullscreen']
++	'fullscreen' => getRequest('fullscreen'),
++	'pinned' => getRequest('pinned')
+ );
+ 
+ // render view
+diff --git a/frontends/php/history.php b/frontends/php/history.php
+index 1208875..6f7a0a0 100644
+--- a/frontends/php/history.php
++++ b/frontends/php/history.php
+@@ -38,7 +38,7 @@ require_once dirname(__FILE__).'/include/page_header.php';
+ 
+ // VAR	TYPE	OPTIONAL	FLAGS	VALIDATION	EXCEPTION
+ $fields = array(
+-	'itemids' =>		array(T_ZBX_INT, O_MAND, P_SYS,	DB_ID,	'isset({favobj})'),
++	'itemids' =>		array(T_ZBX_INT, O_OPT, P_SYS,  DB_ID,  '!isset({favobj})&&!isset({pinned})'),
+ 	'period' =>			array(T_ZBX_INT, O_OPT, null,	null,	null),
+ 	'stime' =>			array(T_ZBX_STR, O_OPT, null,	null,	null),
+ 	'filter_task' =>	array(T_ZBX_STR, O_OPT, null,	IN(FILTER_TASK_SHOW.','.FILTER_TASK_HIDE.','.FILTER_TASK_MARK.','.FILTER_TASK_INVERT_MARK), null),
+@@ -59,7 +59,8 @@ $fields = array(
+ 	'form' =>			array(T_ZBX_STR, O_OPT, P_SYS,	null,	null),
+ 	'form_copy_to' =>	array(T_ZBX_STR, O_OPT, P_SYS,	null,	null),
+ 	'form_refresh' =>	array(T_ZBX_INT, O_OPT, null,	null,	null),
+-	'fullscreen' =>		array(T_ZBX_INT, O_OPT, P_SYS,	IN('0,1'),	null)
++	'fullscreen' =>		array(T_ZBX_INT, O_OPT, P_SYS,	IN('0,1'),	null),
++	'pinned' =>		array(T_ZBX_INT, O_OPT, P_SYS, NULL, null)
+ );
+ check_fields($fields);
+ 
+@@ -108,6 +109,23 @@ if (isset($_REQUEST['favobj'])) {
+ 	}
+ }
+ 
++if (isset($_REQUEST['pinned'])) {
++       if (getRequest('pinned') == 0) {
++               CProfile::update('web.common.pinned.set', $_REQUEST['pinned'], PROFILE_TYPE_INT);
++               echo '$("upd_pin").title = "'._('Pin period').'";'."\n";
++               echo '$("upd_pin").onclick = function() { update_pinned_status(1); }'."\n";
++               echo 'switchElementClass("upd_pin", "iconpinunset", "iconpinset");';
++       }
++       elseif (getRequest('pinned') == 1) {
++               CProfile::update('web.common.pinned.set', $_REQUEST['pinned'], PROFILE_TYPE_INT);
++               echo '$("upd_pin").title = "'._('Unpin period').'";'."\n";
++               echo '$("upd_pin").onclick = function() { update_pinned_status(0); }'."\n";
++               echo 'switchElementClass("upd_pin", "iconpinset", "iconpinunset");';
++       }
++} else {
++       $_REQUEST['pinned'] = CProfile::get('web.common.pinned.set', 0);
++}
++
+ if ($page['type'] == PAGE_TYPE_JS || $page['type'] == PAGE_TYPE_HTML_BLOCK) {
+ 	require_once dirname(__FILE__).'/include/page_footer.php';
+ 	exit;
+@@ -150,6 +168,7 @@ $data = array(
+ 	'iv_string' => array(ITEM_VALUE_TYPE_LOG => 1, ITEM_VALUE_TYPE_TEXT => 1),
+ 	'iv_numeric' => array(ITEM_VALUE_TYPE_FLOAT => 1, ITEM_VALUE_TYPE_UINT64 => 1),
+ 	'fullscreen' => $_REQUEST['fullscreen'],
++	'pinned' => getRequest('pinned'),
+ 	'graphtype' => getRequest('graphtype', GRAPH_TYPE_NORMAL)
+ );
+ 
+diff --git a/frontends/php/host_screen.php b/frontends/php/host_screen.php
+index a01b6fa..bf1bce0 100644
+--- a/frontends/php/host_screen.php
++++ b/frontends/php/host_screen.php
+@@ -49,7 +49,8 @@ $fields = array(
+ 	'filterState' => array(T_ZBX_INT, O_OPT, P_ACT,	null,		null),
+ 	'favobj' =>		array(T_ZBX_STR, O_OPT, P_ACT, null,		null),
+ 	'favid' =>		array(T_ZBX_INT, O_OPT, P_ACT, null,		null),
+-	'favaction' =>	array(T_ZBX_STR, O_OPT, P_ACT, IN('"add","remove"'), null)
++	'favaction' =>	array(T_ZBX_STR, O_OPT, P_ACT, IN('"add","remove"'), null),
++	'pinned' =>     array(T_ZBX_INT, O_OPT, P_SYS, NULL, null)
+ );
+ check_fields($fields);
+ 
+@@ -64,6 +65,23 @@ if (getRequest('favobj') === 'timeline' && hasRequest('elementid') && hasRequest
+ 	navigation_bar_calc('web.hostscreen', getRequest('elementid'), true);
+ }
+ 
++if (isset($_REQUEST['pinned'])) {
++	if ($_REQUEST['pinned'] == 0) {
++		CProfile::update('web.common.pinned.set', $_REQUEST['pinned'], PROFILE_TYPE_INT);
++		echo '$("upd_pin").title = "'._('Pin period').'";'."\n";
++		echo '$("upd_pin").onclick = function() { update_pinned_status(1); }'."\n";
++		echo 'switchElementClass("upd_pin", "iconpinunset", "iconpinset");';
++	}
++	elseif ($_REQUEST['pinned'] == 1) {
++		CProfile::update('web.common.pinned.set', $_REQUEST['pinned'], PROFILE_TYPE_INT);
++		echo '$("upd_pin").title = "'._('Unpin period').'";'."\n";
++		echo '$("upd_pin").onclick = function() { update_pinned_status(0); }'."\n";
++		echo 'switchElementClass("upd_pin", "iconpinset", "iconpinunset");';
++	}
++} else {
++	$_REQUEST['pinned'] = CProfile::get('web.common.pinned.set', 0);
++}
++
+ if ($page['type'] == PAGE_TYPE_JS || $page['type'] == PAGE_TYPE_HTML_BLOCK) {
+ 	require_once dirname(__FILE__).'/include/page_footer.php';
+ 	exit;
+@@ -77,7 +95,8 @@ $data = array(
+ 	'fullscreen' => $_REQUEST['fullscreen'],
+ 	'screenid' => getRequest('screenid', CProfile::get('web.hostscreen.screenid', null)),
+ 	'period' => getRequest('period'),
+-	'stime' => getRequest('stime')
++	'stime' => getRequest('stime'),
++	'pinned' => getRequest('pinned')
+ );
+ CProfile::update('web.hostscreen.screenid', $data['screenid'], PROFILE_TYPE_ID);
+ 
+diff --git a/frontends/php/include/classes/screens/CScreenBase.php b/frontends/php/include/classes/screens/CScreenBase.php
+index abf4c00..5403371 100644
+--- a/frontends/php/include/classes/screens/CScreenBase.php
++++ b/frontends/php/include/classes/screens/CScreenBase.php
+@@ -325,6 +325,10 @@ class CScreenBase {
+ 		if (empty($options['profileIdx2'])) {
+ 			$options['profileIdx2'] = 0;
+ 		}
++		if (CProfile::get('web.common.pinned.set')) {
++			$options['profileIdx'] = 'web.common.pinned';
++			$options['profileIdx2'] = 0;
++		}
+ 
+ 		// show only latest data without update is set only period
+ 		if (!empty($options['period']) && empty($options['stime'])) {
+@@ -352,6 +356,7 @@ class CScreenBase {
+ 		}
+ 		if ($options['updateProfile'] && !empty($options['profileIdx'])) {
+ 			CProfile::update($options['profileIdx'].'.period', $options['period'], PROFILE_TYPE_INT, $options['profileIdx2']);
++			CProfile::update('web.common.pinned.period', $options['period'], PROFILE_TYPE_INT, 0);
+ 		}
+ 
+ 		// stime
+@@ -377,6 +382,8 @@ class CScreenBase {
+ 			if ($options['updateProfile'] && !empty($options['profileIdx'])) {
+ 				CProfile::update($options['profileIdx'].'.stime', $options['stime'], PROFILE_TYPE_STR, $options['profileIdx2']);
+ 				CProfile::update($options['profileIdx'].'.isnow', $isNow, PROFILE_TYPE_INT, $options['profileIdx2']);
++				CProfile::update('web.common.pinned.stime', $options['stime'], PROFILE_TYPE_STR, 0);
++				CProfile::update('web.common.pinned.isnow', $isNow, PROFILE_TYPE_STR, 0);
+ 			}
+ 		}
+ 		else {
+diff --git a/frontends/php/include/html.inc.php b/frontends/php/include/html.inc.php
+index a6406ad..f66fa08 100644
+--- a/frontends/php/include/html.inc.php
++++ b/frontends/php/include/html.inc.php
+@@ -207,6 +207,25 @@ function get_icon($type, $params = array()) {
+ 
+ 		case 'reset':
+ 			return new CIcon(_('Reset'), 'iconreset', 'timeControl.objectReset();');
++		
++		case 'pinned':
++			$pinned= $params['pinned'] ? 0 : 1;
++			if ($pinned) {
++				$title = _('Pin period');
++				$class = 'iconpinunset';
++			}
++			else {
++				$title = _('Unpin period');
++				$class = 'iconpinset';
++			}
++
++			$icon = new CIcon(
++				$title,
++				$class,
++				'update_pinned_status('.$pinned.');'
++			);
++			$icon->setAttribute('id', 'upd_pin');
++			return $icon;
+ 	}
+ 
+ 	return null;
+diff --git a/frontends/php/include/views/monitoring.charts.php b/frontends/php/include/views/monitoring.charts.php
+index 796db8d..0bd7b24 100644
+--- a/frontends/php/include/views/monitoring.charts.php
++++ b/frontends/php/include/views/monitoring.charts.php
+@@ -32,6 +32,8 @@ if ($this->data['graphid']) {
+ 	$chartsWidget->addPageHeader(_('GRAPHS'), array(
+ 		get_icon('favourite', array('fav' => 'web.favorite.graphids', 'elname' => 'graphid', 'elid' => $this->data['graphid'])),
+ 		SPACE,
++		get_icon('pinned', array('pinned' => $this->data['pinned'])),
++		SPACE,
+ 		get_icon('reset', array('id' => $this->data['graphid'])),
+ 		SPACE,
+ 		get_icon('fullscreen', array('fullscreen' => $this->data['fullscreen']))
+diff --git a/frontends/php/include/views/monitoring.history.php b/frontends/php/include/views/monitoring.history.php
+index e1c9d6d..9b4b45a 100644
+--- a/frontends/php/include/views/monitoring.history.php
++++ b/frontends/php/include/views/monitoring.history.php
+@@ -46,6 +46,7 @@ if ($this->data['action'] != HISTORY_BATCH_GRAPH) {
+ 			'elid' => $item['itemid'],
+ 			'elname' => 'itemid'
+ 		));
++		$header['right'][] = get_icon('pinned', array('pinned' => $this->data['pinned']));
+ 	}
+ }
+ 
+diff --git a/frontends/php/include/views/monitoring.hostscreen.php b/frontends/php/include/views/monitoring.hostscreen.php
+index 8508265..962615a 100644
+--- a/frontends/php/include/views/monitoring.hostscreen.php
++++ b/frontends/php/include/views/monitoring.hostscreen.php
+@@ -37,7 +37,9 @@ if (empty($this->data['screen']) || empty($this->data['host'])) {
+ 	));
+ }
+ else {
+-	$screenWidget->addPageHeader(_('SCREENS'), array(get_icon('fullscreen', array('fullscreen' => $this->data['fullscreen']))));
++	$screenWidget->addPageHeader(_('SCREENS'), array(
++		get_icon('pinned', array('pinned' => $this->data['pinned'])),
++		get_icon('fullscreen', array('fullscreen' => $this->data['fullscreen']))));
+ 	$screenWidget->addItem(BR());
+ 
+ 	// host screen list
+diff --git a/frontends/php/include/views/monitoring.screen.php b/frontends/php/include/views/monitoring.screen.php
+index 0e07a32..29d86ee 100644
+--- a/frontends/php/include/views/monitoring.screen.php
++++ b/frontends/php/include/views/monitoring.screen.php
+@@ -60,6 +60,8 @@ else {
+ 		SPACE,
+ 		get_icon('favourite', array('fav' => 'web.favorite.screenids', 'elname' => 'screenid', 'elid' => $screen['screenid'])),
+ 		SPACE,
++		get_icon('pinned', array('pinned' => $this->data['pinned'])),
++		SPACE,
+ 		get_icon('fullscreen', array('fullscreen' => $this->data['fullscreen']))
+ 	));
+ 	$screenWidget->addItem(BR());
+diff --git a/frontends/php/js/main.js b/frontends/php/js/main.js
+index 6d01fe7..17b1c23 100644
+--- a/frontends/php/js/main.js
++++ b/frontends/php/js/main.js
+@@ -589,6 +589,14 @@ function set_color_by_name(id, color) {
+ 	set_color(color);
+ }
+ 
++function update_pinned_status(pinned) {
++	sendAjaxData({
++		data: {
++			pinned: pinned
++		}
++	});
++}
++
+ function add2favorites(favobj, favid) {
+ 	sendAjaxData({
+ 		data: {
+diff --git a/frontends/php/screens.php b/frontends/php/screens.php
+index c67cd4e..4a720a0 100644
+--- a/frontends/php/screens.php
++++ b/frontends/php/screens.php
+@@ -51,7 +51,8 @@ $fields = array(
+ 	'filterState' => array(T_ZBX_INT, O_OPT, P_ACT,	null,		null),
+ 	'favobj' =>		array(T_ZBX_STR, O_OPT, P_ACT,	null,		null),
+ 	'favid' =>		array(T_ZBX_INT, O_OPT, P_ACT,	null,		null),
+-	'favaction' =>	array(T_ZBX_STR, O_OPT, P_ACT,	IN('"add","remove"'), null)
++	'favaction' =>	array(T_ZBX_STR, O_OPT, P_ACT,	IN('"add","remove"'), null),
++	'pinned' =>     array(T_ZBX_INT, O_OPT, P_SYS, NULL, null)
+ );
+ check_fields($fields);
+ 
+@@ -132,6 +133,23 @@ if (isset($_REQUEST['favobj'])) {
+ 	}
+ }
+ 
++if (isset($_REQUEST['pinned'])) {
++	if ($_REQUEST['pinned'] == 0) {
++		CProfile::update('web.common.pinned.set', $_REQUEST['pinned'], PROFILE_TYPE_INT);
++		echo '$("upd_pin").title = "'._('Pin period').'";'."\n";
++		echo '$("upd_pin").onclick = function() { update_pinned_status(1); }'."\n";
++		echo 'switchElementClass("upd_pin", "iconpinunset", "iconpinset");';
++	}
++	elseif ($_REQUEST['pinned'] == 1) {
++		CProfile::update('web.common.pinned.set', $_REQUEST['pinned'], PROFILE_TYPE_INT);
++		echo '$("upd_pin").title = "'._('Unpin period').'";'."\n";
++		echo '$("upd_pin").onclick = function() { update_pinned_status(0); }'."\n";
++		echo 'switchElementClass("upd_pin", "iconpinset", "iconpinunset");';
++	}
++} else {
++	$_REQUEST['pinned'] = CProfile::get('web.common.pinned.set', 0);
++}
++
+ if ($page['type'] == PAGE_TYPE_JS || $page['type'] == PAGE_TYPE_HTML_BLOCK) {
+ 	require_once dirname(__FILE__).'/include/page_footer.php';
+ 	exit;
+@@ -147,7 +165,8 @@ $data = array(
+ 	'elementid' => getRequest('elementid', false),
+ 
+ 	// whether we should use screen name to fetch a screen (if this is false, elementid is used)
+-	'use_screen_name' => isset($_REQUEST['screenname'])
++	'use_screen_name' => isset($_REQUEST['screenname']),
++	'pinned' => getRequest('pinned')
+ );
+ 
+ // if none is provided
+diff --git a/frontends/php/styles/icon.css b/frontends/php/styles/icon.css
+index 522ff01..ab5830f 100644
+--- a/frontends/php/styles/icon.css
++++ b/frontends/php/styles/icon.css
+@@ -56,6 +56,8 @@
+ .iconsnooze		{ background-image: url('../images/general/bttn/snooze.png'); }
+ .iconclose		{ background-image: url('../images/general/bttn/close.png'); }
+ .iconmove		{ background-image: url('../images/general/bttn/move.png'); cursor: move; }
++.iconpinset		{ background-image: url('../images/general/bttn/pinset.png'); }
++.iconpinunset		{ background-image: url('../images/general/bttn/pinunset.png'); }
+ 
+ .app-list-toggle, .app-list-toggle-all { margin-left: 3px; }
+ 
