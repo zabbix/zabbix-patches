@@ -5,3 +5,8 @@ id|type|details
 1|ltr|3
 1|extra|pinset.png images/general/bttn/
 1|extra|pinunset.png images/general/bttn/
+
+2|name|zabbix-2.4-ZBXNEXT-2819
+2|f|y
+2|desc|Adds an option to disable showing groups without problems in host and system status
+2|ltr|3

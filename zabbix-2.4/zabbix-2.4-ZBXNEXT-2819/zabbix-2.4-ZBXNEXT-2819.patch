@@ -1,0 +1,154 @@
+Last-Update: 2016-05-18
+Forwarded: not-needed
+Author: Dmitry Verhoturov <paskal.07@gmail.com>
+Description: Adds an option to disable showing groups without problems in host and system status
+
+--- a/frontends/php/dashboard.php
++++ b/frontends/php/dashboard.php
+@@ -58,6 +58,7 @@
+ 	'maintenance' => null,
+ 	'severity' => null,
+ 	'extAck' => 0,
++	'dontshowgreen' => null,
+ 	'filterEnable' => CProfile::get('web.dashconf.filter.enable', 0)
+ );
+ 
+@@ -111,6 +112,9 @@
+ 	$maintenance = CProfile::get('web.dashconf.hosts.maintenance', 1);
+ 	$dashboardConfig['maintenance'] = ($maintenance == 0) ? 0 : null;
+ 
++	$dontshowgreen = CProfile::get('web.dashconf.groups.dontshowgreen', 0);
++	$dashboardConfig['dontshowgreen'] = $dontshowgreen ? 1 : null;
++
+ 	// triggers
+ 	$severity = CProfile::get('web.dashconf.triggers.severity', null);
+ 	$dashboardConfig['severity'] = zbx_empty($severity) ? null : explode(';', $severity);
+--- a/frontends/php/dashconf.php
++++ b/frontends/php/dashconf.php
+@@ -41,6 +41,7 @@
+ 	'groupids' =>		array(T_ZBX_INT, O_OPT, P_SYS,			null,			null),
+ 	'hidegroupids' =>	array(T_ZBX_INT, O_OPT, P_SYS,			null,			null),
+ 	'trgSeverity' =>	array(T_ZBX_INT, O_OPT, P_SYS,			null,			null),
++	'dontshowgreen' =>	array(T_ZBX_INT, O_OPT, P_SYS,  null,                   null),
+ 	'maintenance' =>	array(T_ZBX_INT, O_OPT, P_SYS,			BETWEEN(0, 1),	null),
+ 	'extAck' =>			array(T_ZBX_INT, O_OPT, P_SYS,			null,			null),
+ 	'form_refresh' =>	array(T_ZBX_INT, O_OPT, P_SYS,			null,			null),
+@@ -89,6 +90,9 @@
+ 		$_REQUEST['maintenance'] = getRequest('maintenance', 0);
+ 		CProfile::update('web.dashconf.hosts.maintenance', $_REQUEST['maintenance'], PROFILE_TYPE_INT);
+ 
++		$_REQUEST['dontshowgreen'] = getRequest('dontshowgreen', 0);
++		CProfile::update('web.dashconf.groups.dontshowgreen', $_REQUEST['dontshowgreen'], PROFILE_TYPE_INT);
++
+ 		// triggers
+ 		$_REQUEST['trgSeverity'] = getRequest('trgSeverity', array());
+ 		$_REQUEST['extAck'] = getRequest('extAck', 0);
+@@ -133,6 +137,8 @@
+ 	$data['maintenance'] = CProfile::get('web.dashconf.hosts.maintenance', 1);
+ 	$data['extAck'] = CProfile::get('web.dashconf.events.extAck', 0);
+ 
++ 	$data['dontshowgreen'] = CProfile::get('web.dashconf.groups.dontshowgreen', 0);
++
+ 	$data['severity'] = CProfile::get('web.dashconf.triggers.severity', '0;1;2;3;4;5');
+ 	$data['severity'] = zbx_empty($data['severity']) ? array() : explode(';', $data['severity']);
+ 
+--- a/frontends/php/include/blocks.inc.php
++++ b/frontends/php/include/blocks.inc.php
+@@ -402,6 +402,7 @@
+ 	$config = select_config();
+ 
+ 	foreach ($groups as $group) {
++		$total = 0;
+ 		$groupRow = new CRow();
+ 
+ 		$name = new CLink($group['name'], 'tr_status.php?filter_set=1&groupid='.$group['groupid'].'&hostid=0'.
+@@ -430,13 +431,16 @@
+ 			switch ($filter['extAck']) {
+ 				case EXTACK_OPTION_ALL:
+ 					$groupRow->addItem(getSeverityCell($severity, $allTriggersNum, !$allTriggersNum));
++					$total = $total + $data['count'];
+ 					break;
+ 
+ 				case EXTACK_OPTION_UNACK:
+ 					$groupRow->addItem(getSeverityCell($severity, $unackTriggersNum, !$unackTriggersNum));
++					$total = $total + $data['count_unack'];
+ 					break;
+ 
+ 				case EXTACK_OPTION_BOTH:
++					$total = $total + $data['count'];
+ 					if ($unackTriggersNum) {
+ 						$span = new CSpan(SPACE._('of').SPACE);
+ 						$unackTriggersNum = new CSpan($unackTriggersNum);
+@@ -451,8 +455,10 @@
+ 			}
+ 		}
+ 
++		if (!isset($filter['dontshowgreen']) || $total > 0) {
+ 		$table->addRow($groupRow);
+ 	}
++	}
+ 
+ 	$script = new CJsScript(get_js(
+ 		'jQuery("#'.WIDGET_SYSTEM_STATUS.'_footer").html("'._s('Updated: %s', zbx_date2str(TIME_FORMAT_SECONDS)).'");'
+@@ -667,6 +673,7 @@
+ 	}
+ 
+ 	foreach ($groups as $group) {
++		$total = 0;
+ 		if (!isset($hosts_data[$group['groupid']])) {
+ 			continue;
+ 		}
+@@ -777,6 +784,7 @@
+ 
+ 		switch ($filter['extAck']) {
+ 			case EXTACK_OPTION_ALL:
++				$total = $total + $hosts_data[$group['groupid']]['problematic'];
+ 				$group_row->addItem(new CCol(
+ 					$problematic_count,
+ 					getSeverityStyle($highest_severity[$group['groupid']], $hosts_data[$group['groupid']]['problematic']))
+@@ -784,6 +792,7 @@
+ 				$group_row->addItem($hosts_data[$group['groupid']]['problematic'] + $hosts_data[$group['groupid']]['ok']);
+ 				break;
+ 			case EXTACK_OPTION_UNACK:
++				$total = $total + $hosts_data[$group['groupid']]['lastUnack'];
+ 				$group_row->addItem(new CCol(
+ 					$lastUnack_count,
+ 					getSeverityStyle((isset($highest_severity2[$group['groupid']]) ? $highest_severity2[$group['groupid']] : 0),
+@@ -792,6 +801,7 @@
+ 				$group_row->addItem($hosts_data[$group['groupid']]['lastUnack'] + $hosts_data[$group['groupid']]['ok']);
+ 				break;
+ 			case EXTACK_OPTION_BOTH:
++				$total = $total + $hosts_data[$group['groupid']]['problematic']; 
+ 				$unackspan = $lastUnack_count ? new CSpan(array($lastUnack_count, SPACE._('of').SPACE)) : null;
+ 				$group_row->addItem(new CCol(array(
+ 					$unackspan, $problematic_count),
+@@ -801,8 +811,10 @@
+ 				break;
+ 		}
+ 
++		if (!isset($filter['dontshowgreen']) || $total > 0) {
+ 		$table->addRow($group_row);
+ 	}
++	}
+ 
+ 	$script = new CJsScript(get_js(
+ 		'jQuery("#'.WIDGET_HOST_STATUS.'_footer").html("'._s('Updated: %s', zbx_date2str(TIME_FORMAT_SECONDS)).'");'
+--- a/frontends/php/include/views/monitoring.dashconf.php
++++ b/frontends/php/include/views/monitoring.dashconf.php
+@@ -86,6 +86,16 @@
+ }
+ $dashconfFormList->addRow(_('Hosts'), array($maintenanceCheckBox, _('Show hosts in maintenance')));
+ 
++// append don't show green groups checkbox to form list
++if (!isset($this->data['dontshowgreen'])) {
++	$this->data['dontshowgreen'] = 0;
++}
++$dontshowgreenCheckBox = new CCheckBox('dontshowgreen', $this->data['dontshowgreen'], null, '1');
++if (!$this->data['isFilterEnable']) {
++	$dontshowgreenCheckBox->setAttribute('dontshowgreen', 'disabled');
++}
++$dashconfFormList->addRow(_('Groups'), array($dontshowgreenCheckBox, _('Do not show groups without problems in system and host statuses')));
++
+ // append trigger severities to form list
+ $severities = array();
+ foreach ($this->data['severities'] as $severity) {
