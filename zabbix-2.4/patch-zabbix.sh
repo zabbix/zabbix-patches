@@ -4,6 +4,15 @@
 # no error checking at all
 # no conflict/dependency concept
 
+[[ "$@" ]] || {
+    echo "Usage:
+$0 zabbix_version target_directory
+
+Example:
+$0 2.4.8 /path/to/frontend"
+    exit
+}
+
 zabbix_version=$1
 zabbix_major_version=${zabbix_version%.*}
 target_dir=$2
