@@ -49,7 +49,7 @@ while IFS='|' read patch_id type details; do
         patch_extra["$patch_id"]="${patch_extra[$patch_id]#$'\n'}"$'\n'"$details"
         continue
     }
-done < <(tail -n +2 patches.def)
+done < <(tail -n +2 zabbix-$zabbix_major_version/patches.def)
 
 for ((patchid=1; patchid<${#patch_name[@]}+1; patchid++)); do
     patchlist+=($patchid "${patch_name[$patchid]#zabbix-$zabbix_major_version-} ${patch_desc[$patchid]}" off)
@@ -63,12 +63,16 @@ patches=$(dialog --stdout --checklist "Choose the patches to apply" 0 0 0 "${pat
     exit
 }
 
+pushd zabbix-$zabbix_major_version
 for patch in $patches; do
-    cp ${patch_name[$patch]}/${patch_name[$patch]}.patch $target_dir/${patch_frontend_only["$patch"]:+frontends/php}
-    cd $target_dir/${patch_frontend_only["$patch"]:+frontends/php}
+    #TODO: Why are we cp-ing? Is it to keep track of what was done?
+    cp ${patch_name[$patch]}/${patch_name[$patch]}.patch $target_dir${patch_frontend_only["$patch"]:+frontends/php}
+    pushd $target_dir${patch_frontend_only["$patch"]:+frontends/php}
     patch -p ${patch_ltr["$patch"]:-0} -i ${patch_name[$patch]}.patch
-    cd -
+    popd
+    #TODO: The input to this loop is broken for patches that have no extra files
     while read extra; do
         cp $extra
-    done < <(echo "${patch_extra[$patch]}" | sed -e "s| | $target_dir/${patch_frontend_only["$patch"]:+frontends/php/}|" -e "s|^|${patch_name[$patch]}/${patch_name[$patch]}-|")
+    done < <(echo "${patch_extra[$patch]}" | sed -e "s| | $target_dir${patch_frontend_only["$patch"]:+frontends/php/}|" -e "s|^|${patch_name[$patch]}/${patch_name[$patch]}-|")
 done
+popd
