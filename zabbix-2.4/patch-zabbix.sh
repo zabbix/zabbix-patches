@@ -4,6 +4,8 @@
 # no error checking at all
 # no conflict/dependency concept
 
+command -v dialog 2>&1 || { echo >&2 "This script requires 'dialog'. Please install it!"; exit 1; }
+
 [[ "$@" ]] || {
     echo "Usage:
 $0 zabbix_version target_directory
