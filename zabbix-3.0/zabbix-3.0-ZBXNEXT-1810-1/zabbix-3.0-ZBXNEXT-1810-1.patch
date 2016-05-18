@@ -1,0 +1,208 @@
+commit ade5eb4842d0a4150aefc34b37b8b1967398bb22
+Author: Volker Fröhlich <vf@geizhals.at>
+Date:   Sat Mar 26 23:42:30 2016 +0100
+
+    Port forward patch for ZBXNEXT-1810
+
+diff --git a/include/defines.inc.php b/include/defines.inc.php
+index 54ecde4..ca78f91 100644
+--- a/include/defines.inc.php
++++ b/include/defines.inc.php
+@@ -590,6 +590,11 @@ define('SCREEN_SURROGATE_MAX_COLUMNS_MAX', 100);
+ 
+ define('DEFAULT_LATEST_ISSUES_CNT', 20);
+ 
++define('LATEST_DATA_MATCH_SUBSTRING', 0);
++define('LATEST_DATA_MATCH_NOT_SUBSTRING', 1);
++define('LATEST_DATA_MATCH_REGEX', 2);
++define('LATEST_DATA_MATCH_NOT_REGEX', 3);
++
+ // alignments
+ define('HALIGN_DEFAULT',	0);
+ define('HALIGN_CENTER',		0);
+diff --git a/latest.php b/latest.php
+index 8d5770a..bd2bc3f 100644
+--- a/latest.php
++++ b/latest.php
+@@ -40,6 +40,8 @@ $fields = [
+ 	'hostids' =>			[T_ZBX_INT, O_OPT, P_SYS,	DB_ID,		null],
+ 	'fullscreen' =>			[T_ZBX_INT, O_OPT, P_SYS,	IN('0,1'),	null],
+ 	'select' =>				[T_ZBX_STR, O_OPT, null,	null,		null],
++	'select_val'=>			[T_ZBX_STR, O_OPT, null,	null,		null],
++	'select_val_opts'=>		[T_ZBX_INT, O_OPT, null,	null,		null],
+ 	'show_without_data' =>	[T_ZBX_INT, O_OPT, null,	IN('0,1'),	null],
+ 	'show_details' =>		[T_ZBX_INT, O_OPT, null,	IN('0,1'),	null],
+ 	'application' =>		[T_ZBX_STR, O_OPT, null,	null,		null],
+@@ -108,6 +110,8 @@ require_once dirname(__FILE__).'/include/views/js/monitoring.latest.js.php';
+  */
+ if (hasRequest('filter_set')) {
+ 	CProfile::update('web.latest.filter.select', getRequest('select', ''), PROFILE_TYPE_STR);
++	CProfile::update('web.latest.filter.select_val', getRequest('select_val', ''), PROFILE_TYPE_STR);
++	CProfile::update('web.latest.filter.select_val_opts', getRequest('select_val_opts', LATEST_DATA_MATCH_SUBSTRING), PROFILE_TYPE_STR);
+ 	CProfile::update('web.latest.filter.show_without_data', getRequest('show_without_data', 0), PROFILE_TYPE_INT);
+ 	CProfile::update('web.latest.filter.show_details', getRequest('show_details', 0), PROFILE_TYPE_INT);
+ 	CProfile::update('web.latest.filter.application', getRequest('application', ''), PROFILE_TYPE_STR);
+@@ -117,6 +121,8 @@ if (hasRequest('filter_set')) {
+ elseif (hasRequest('filter_rst')) {
+ 	DBStart();
+ 	CProfile::delete('web.latest.filter.select');
++	CProfile::delete('web.latest.filter.select_val');
++	CProfile::delete('web.latest.filter.select_val_opts');
+ 	CProfile::delete('web.latest.filter.show_without_data');
+ 	CProfile::delete('web.latest.filter.show_details');
+ 	CProfile::delete('web.latest.filter.application');
+@@ -127,6 +133,8 @@ elseif (hasRequest('filter_rst')) {
+ 
+ $filter = [
+ 	'select' => CProfile::get('web.latest.filter.select', ''),
++	'selectVal' => CProfile::get('web.latest.filter.select_val', ''),
++	'selectValOpts' => CProfile::get('web.latest.filter.select_val_opts', LATEST_DATA_MATCH_SUBSTRING),
+ 	'showWithoutData' => CProfile::get('web.latest.filter.show_without_data', 1),
+ 	'showDetails' => CProfile::get('web.latest.filter.show_details'),
+ 	'application' => CProfile::get('web.latest.filter.application', ''),
+@@ -388,6 +396,16 @@ $filterColumn2->addRow(
+ 	_('Name'),
+ 	(new CTextBox('select', $filter['select']))->setWidth(ZBX_TEXTAREA_FILTER_STANDARD_WIDTH)
+ );
++
++$valueFilterTable = new CTable();
++$valueFilterTable->setId('value-filter');
++$valueFilterTable->addRow([
++	new CComboBox('select_val_opts', $filter['selectValOpts'], null, ['substring', 'not substring', 'regex', 'not regex']),
++	(new CTextBox('select_val', $filter['selectVal']))->setWidth(ZBX_TEXTAREA_FILTER_SMALL_WIDTH)]);
++
++$filterColumn2->addRow(
++	_('Show items with values matching'), $valueFilterTable
++);
+ $filterColumn2->addRow(
+ 	_('Show items without data'),
+ 	(new CCheckBox('show_without_data'))->setChecked($filter['showWithoutData'] == 1)
+@@ -489,6 +507,31 @@ foreach ($items as $key => $item){
+ 		$lastValue = UNKNOWN_VALUE;
+ 	}
+ 
++	if(!empty($filter['selectVal'])) {
++		switch ($filter['selectValOpts']) {
++			case LATEST_DATA_MATCH_SUBSTRING:
++				$zbxMatch = stristr($lastValue, $filter['selectVal']);
++				break;
++			case LATEST_DATA_MATCH_NOT_SUBSTRING:
++				$zbxMatch = !stristr($lastValue, $filter['selectVal']);
++				break;
++			case LATEST_DATA_MATCH_REGEX:
++				$zbxMatch = preg_match('|'.$filter['selectVal'].'|', $lastValue);
++				break;
++			case LATEST_DATA_MATCH_NOT_REGEX:
++				$zbxMatch = !preg_match('|'.$filter['selectVal'].'|', $lastValue);
++				break;
++		}
++	}
++	else {
++		$zbxMatch = true;
++	}
++
++	// Remove items from application if the value doesn't match the filter
++	if(!$zbxMatch) {
++		continue;
++	}
++
+ 	// change
+ 	$digits = ($item['value_type'] == ITEM_VALUE_TYPE_FLOAT) ? 2 : 0;
+ 	if ($lastHistory && $prevHistory
+@@ -597,6 +640,9 @@ foreach ($items as $key => $item){
+ 			$applications[$applicationId]['item_cnt']++;
+ 			// objects may have different properties, so it's better to use a copy of it
+ 			$tab_rows[$applicationId][] = clone $row;
++			if(!$zbxMatch) {
++				$applications[$applicationId]['item_cnt']--;
++			}
+ 		}
+ 	}
+ 
+@@ -668,6 +714,32 @@ foreach ($items as $item) {
+ 		$lastValue = UNKNOWN_VALUE;
+ 	}
+ 
++	if(!empty($filter['selectVal'])) {
++		switch ($filter['selectValOpts']) {
++		case LATEST_DATA_MATCH_SUBSTRING:
++			$zbxMatch = stristr($lastValue, $filter['selectVal']);
++			break;
++		case LATEST_DATA_MATCH_NOT_SUBSTRING:
++			$zbxMatch = !stristr($lastValue, $filter['selectVal']);
++			break;
++		case LATEST_DATA_MATCH_REGEX:
++			$zbxMatch = preg_match('|'.$filter['selectVal'].'|', $lastValue);
++			break;
++		case LATEST_DATA_MATCH_NOT_REGEX:
++			$zbxMatch = !preg_match('|'.$filter['selectVal'].'|', $lastValue);
++			break;
++		}
++	}
++	else {
++		$zbxMatch = true;
++	}
++
++	// Remove items from application if the value doesn't match the filter
++	if(!$zbxMatch) {
++		$host['item_cnt']--;
++		continue;
++	}
++
+ 	// column "change"
+ 	$digits = ($item['value_type'] == ITEM_VALUE_TYPE_FLOAT) ? 2 : 0;
+ 	if (isset($lastHistory['value']) && isset($prevHistory['value'])
+@@ -784,30 +856,31 @@ foreach ($hosts as $hostId => $dbHost) {
+ 
+ 	$open_state = CProfile::get('web.latest.toggle_other', null, $host['hostid']);
+ 
+-	$hostName = null;
+-
+-	if (!$singleHostSelected) {
+-		$hostName = (new CSpan($host['name']))
+-			->addClass(ZBX_STYLE_LINK_ACTION)
+-			->setMenuPopup(CMenuPopupHelper::getHost($host, $hostScripts[$host['hostid']]));
+-		if ($host['status'] == HOST_STATUS_NOT_MONITORED) {
+-			$hostName->addClass(ZBX_STYLE_RED);
++	if ($dbHost['item_cnt'] != 0) {
++		$hostName = null;
++		if (!$singleHostSelected) {
++			$hostName = (new CSpan($host['name']))
++				->addClass(ZBX_STYLE_LINK_ACTION)
++				->setMenuPopup(CMenuPopupHelper::getHost($host, $hostScripts[$host['hostid']]));
++			if ($host['status'] == HOST_STATUS_NOT_MONITORED) {
++				$hostName->addClass(ZBX_STYLE_RED);
++			}
+ 		}
+-	}
+ 
+-	// add toggle row
+-	$table->addRow([
+-		(new CDiv())
+-			->addClass(ZBX_STYLE_TREEVIEW)
+-			->addClass('app-list-toggle')
+-			->setAttribute('data-app-id', '0_'.$host['hostid'])
+-			->setAttribute('data-open-state', $open_state)
+-			->addItem(new CSpan()),
+-		'',
+-		$hostName,
+-		(new CCol([bold('- '.('other').' -'), ' ('._n('%1$s Item', '%1$s Items', $dbHost['item_cnt']).')']))
+-			->setColSpan($filter['showDetails'] ? 10 : 5)
+-	]);
++		// add toggle row
++		$table->addRow([
++			(new CDiv())
++				->addClass(ZBX_STYLE_TREEVIEW)
++				->addClass('app-list-toggle')
++				->setAttribute('data-app-id', '0_'.$host['hostid'])
++				->setAttribute('data-open-state', $open_state)
++				->addItem(new CSpan()),
++			'',
++			$hostName,
++			(new CCol([bold('- '.('other').' -'), ' ('._n('%1$s Item', '%1$s Items', $dbHost['item_cnt']).')']))
++				->setColSpan($filter['showDetails'] ? 10 : 5)
++		]);
++	}
+ 
+ 	// add toggle sub rows
+ 	foreach($appRows as $row) {

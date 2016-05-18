@@ -1,0 +1,41 @@
+commit 7e962bdad371a76bb93070d0420dbedcdb64383b
+Author: Volker Fröhlich <vf@geizhals.at>
+Date:   Sun Mar 27 00:49:25 2016 +0100
+
+    Port forward the last-20 patch for ZBXNEXT-2448
+
+diff --git a/include/classes/macros/CMacrosResolver.php b/include/classes/macros/CMacrosResolver.php
+index a90b5b7..1969b75 100644
+--- a/include/classes/macros/CMacrosResolver.php
++++ b/include/classes/macros/CMacrosResolver.php
+@@ -1171,7 +1171,7 @@ class CMacrosResolver extends CMacrosResolverGeneral {
+ 					// Macro function is "last".
+ 					if ($function == 'last') {
+ 						$value = ($item['lastclock'] > 0)
+-							? formatHistoryValue($item['lastvalue'], $item)
++							? formatHistoryValue($item['lastvalue'], $item, false)
+ 							: UNRESOLVED_MACRO_STRING;
+ 					}
+ 					// For other macro functions ("max", "min" or "avg") get item value.
+diff --git a/include/classes/macros/CMacrosResolverGeneral.php b/include/classes/macros/CMacrosResolverGeneral.php
+index 869a662..8491692 100644
+--- a/include/classes/macros/CMacrosResolverGeneral.php
++++ b/include/classes/macros/CMacrosResolverGeneral.php
+@@ -561,7 +561,7 @@ class CMacrosResolverGeneral {
+ 	 * @return string
+ 	 */
+ 	protected function getItemLastValueMacro($lastValue, array $item) {
+-		return ($lastValue === null) ? UNRESOLVED_MACRO_STRING : formatHistoryValue($lastValue, $item);
++		return ($lastValue === null) ? UNRESOLVED_MACRO_STRING : formatHistoryValue($lastValue, $item, false);
+ 	}
+ 
+ 	/**
+@@ -674,7 +674,7 @@ class CMacrosResolverGeneral {
+ 
+ 								$replace = ($value === null)
+ 									? UNRESOLVED_MACRO_STRING
+-									: formatHistoryValue($value, $func);
++									: formatHistoryValue($value, $func, false);
+ 							}
+ 							else {
+ 								$replace = $this->getItemLastValueMacro($lastValue, $func);
