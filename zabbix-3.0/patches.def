@@ -17,3 +17,7 @@ id|type|details
 4|name|zabbix-3.0-ZBXNEXT-2315-1
 4|desc|Include response headers for httptest regex required strings
 4|ltr|1
+
+5|name|zabbix-3.0-ZBXNEXT-1109
+5|desc|Adds ability for zabbix-agent able send traps to two servers at same time
+5|ltr|1
