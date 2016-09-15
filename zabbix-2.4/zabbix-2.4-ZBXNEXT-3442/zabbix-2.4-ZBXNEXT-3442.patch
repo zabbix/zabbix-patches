@@ -1,0 +1,46 @@
+Last-Update: 2016-02-19
+Forwarded: not-needed
+Author: Dmitry Verhoturov <paskal.07@gmail.com>
+Description: Adds support of DB READONLY flag in configuration of frontend
+
+--- a/frontends/php/include/classes/core/CConfigFile.php
++++ b/frontends/php/include/classes/core/CConfigFile.php
+@@ -100,6 +100,10 @@
+ 			$this->config['DB']['SCHEMA'] = $DB['SCHEMA'];
+ 		}
+ 
++		if (isset($DB['READONLY'])) {
++			$this->config['DB']['READONLY'] = $DB['READONLY'];
++		}
++
+ 		if (isset($ZBX_SERVER)) {
+ 			$this->config['ZBX_SERVER'] = $ZBX_SERVER;
+ 		}
+@@ -172,6 +176,7 @@
+ 			'TYPE' => null,
+ 			'SERVER' => 'localhost',
+ 			'PORT' => '0',
++			'READONLY' => 0,
+ 			'DATABASE' => null,
+ 			'USER' => '',
+ 			'PASSWORD' => '',
+--- a/frontends/php/include/db.inc.php
++++ b/frontends/php/include/db.inc.php
+@@ -501,6 +501,17 @@
+ function DBexecute($query, $skip_error_messages = 0) {
+ 	global $DB;
+ 
++	if (isset($DB['READONLY']) && $DB['READONLY']) {
++		if (!preg_match('/^insert\s+into\s+sessions/i', $query) && !preg_match('/^update\s+sessions/i', $query)
++			&& !preg_match('/^delete\sfrom\ssessions/i', $query)
++			&& !preg_match('/^update\s+profiles/i', $query) && !preg_match('/^update\s+user_history/i', $query)
++			&& !preg_match('/^set/i', $query) && !preg_match('/^begin/i', $query)
++			&& !preg_match('/^commit/i', $query) && !preg_match('/^rollback/i', $query)) {
++			error('READ-ONLY flag is set. Query [' . $query .'] will not be executed!');
++			return false;
++			}
++	}
++
+ 	if (!isset($DB['DB']) || empty($DB['DB'])) {
+ 		return false;
+ 	}

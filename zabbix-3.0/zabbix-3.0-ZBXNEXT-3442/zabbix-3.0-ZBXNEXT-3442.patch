@@ -1,0 +1,54 @@
+Last-Update: 2016-09-15
+Forwarded: not-needed
+Author: Dmitry Verhoturov <paskal.07@gmail.com>
+Description: Adds support of DB READONLY flag in configuration of frontend
+
+--- a/frontends/php/include/classes/core/CConfigFile.php
++++ b/frontends/php/include/classes/core/CConfigFile.php
+@@ -101,6 +101,10 @@
+ 			$this->config['DB']['PORT'] = $DB['PORT'];
+ 		}
+ 
++		if (isset($DB['READONLY'])) {
++			$this->config['DB']['READONLY'] = $DB['READONLY'];
++		}
++
+ 		if (isset($DB['USER'])) {
+ 			$this->config['DB']['USER'] = $DB['USER'];
+ 		}
+@@ -173,6 +177,7 @@
+ $DB[\'TYPE\']     = \''.addcslashes($this->config['DB']['TYPE'], "'\\").'\';
+ $DB[\'SERVER\']   = \''.addcslashes($this->config['DB']['SERVER'], "'\\").'\';
+ $DB[\'PORT\']     = \''.addcslashes($this->config['DB']['PORT'], "'\\").'\';
++$DB[\'READONLY\'] = \''.addcslashes($this->config['DB']['READONLY'], "'\\").'\';
+ $DB[\'DATABASE\'] = \''.addcslashes($this->config['DB']['DATABASE'], "'\\").'\';
+ $DB[\'USER\']     = \''.addcslashes($this->config['DB']['USER'], "'\\").'\';
+ $DB[\'PASSWORD\'] = \''.addcslashes($this->config['DB']['PASSWORD'], "'\\").'\';
+@@ -193,6 +198,7 @@
+ 			'TYPE' => null,
+ 			'SERVER' => 'localhost',
+ 			'PORT' => '0',
++			'READONLY' => '0',
+ 			'DATABASE' => null,
+ 			'USER' => '',
+ 			'PASSWORD' => '',
+--- a/frontends/php/include/db.inc.php
++++ b/frontends/php/include/db.inc.php
+@@ -499,6 +499,17 @@
+ function DBexecute($query, $skip_error_messages = 0) {
+ 	global $DB;
+
++	if (isset($DB['READONLY']) && $DB['READONLY']) {
++		if (!preg_match('/^insert\s+into\s+sessions/i', $query) && !preg_match('/^update\s+sessions/i', $query)
++			&& !preg_match('/^delete\sfrom\ssessions/i', $query)
++			&& !preg_match('/^update\s+profiles/i', $query) && !preg_match('/^update\s+user_history/i', $query)
++			&& !preg_match('/^set/i', $query) && !preg_match('/^begin/i', $query)
++			&& !preg_match('/^commit/i', $query) && !preg_match('/^rollback/i', $query)) {
++			error('READ-ONLY flag is set. Query [' . $query .'] will not be executed!');
++			return false;
++			}
++	}
++
+ 	if (!isset($DB['DB']) || empty($DB['DB'])) {
+ 		return false;
+ 	}
