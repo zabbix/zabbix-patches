@@ -1,28 +1,28 @@
 id|type|details
-1|name|zabbix-3.0-ZBXNEXT-1456-1
+1|name|ZBXNEXT-1456-1
 1|f|y
 1|desc|Filter discovered items on items list page
 1|ltr|1
 
-2|name|zabbix-3.0-ZBXNEXT-1810-1
+2|name|ZBXNEXT-1810-1
 2|f|y
 2|desc|Filter latest data by item value (regex and substring)
 2|ltr|1
 
-3|name|zabbix-3.0-ZBXNEXT-2448-1
+3|name|ZBXNEXT-2448-1
 3|f|y
 3|desc|Do not truncate ITEM.VALUE and ITEM.LASTVALUE after 20 characters in the frontend
 3|ltr|1
 
-4|name|zabbix-3.0-ZBXNEXT-2315-1
+4|name|ZBXNEXT-2315-1
 4|desc|Include response headers for httptest regex required strings
 4|ltr|1
 
-5|name|zabbix-3.0-ZBXNEXT-1109
+5|name|ZBXNEXT-1109
 5|desc|Adds ability for zabbix-sender send values to two servers at same time
 5|ltr|1
 
-6|name|zabbix-3.0-ZBXNEXT-1603
+6|name|ZBXNEXT-1603
 6|f|y
 6|desc|Adds support of DB READONLY flag in configuration of frontend
 6|ltr|3
