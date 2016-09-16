@@ -1,7 +1,7 @@
 Last-Update: 2016-08-25
 Forwarded: not-needed
 Author: Dmitry Verhoturov <paskal.07@gmail.com>
-Description: Adds ability for zabbix-agent able send traps to two servers at same time
+Description: Adds ability for zabbix-sender send values to two servers at same time
 
 --- a/src/zabbix_sender/zabbix_sender.c
 +++ b/src/zabbix_sender/zabbix_sender.c
