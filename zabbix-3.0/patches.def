@@ -22,6 +22,6 @@ id|type|details
 5|desc|Adds ability for zabbix-agent able send traps to two servers at same time
 5|ltr|1
 
-6|name|zabbix-3.0-ZBXNEXT-3442
+6|name|zabbix-3.0-ZBXNEXT-1603
 6|desc|Adds support of DB READONLY flag in configuration of frontend
 6|ltr|1
