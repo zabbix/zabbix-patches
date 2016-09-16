@@ -1,0 +1,215 @@
+Last-Update: 2016-08-25
+Forwarded: not-needed
+Author: Dmitry Verhoturov <paskal.07@gmail.com>
+Description: Adds ability for zabbix-sender send values to two servers at same time
+
+--- a/src/zabbix_sender/zabbix_sender.c
++++ b/src/zabbix_sender/zabbix_sender.c
+@@ -36,36 +36,36 @@
+ const char	syslog_app_name[] = "zabbix_sender";
+ 
+ const char	*usage_message[] = {
+-	"[-v]", "-z server", "[-p port]", "[-I IP-address]", "-s host", "-k key", "-o value", NULL,
+-	"[-v]", "-z server", "[-p port]", "[-I IP-address]", "[-s host]", "[-T]", "[-r]", "-i input-file", NULL,
+-	"[-v]", "-c config-file", "[-z server]", "[-p port]", "[-I IP-address]", "[-s host]", "-k key", "-o value",
++	"[-v]", "-z server", "[-p port]", "[-l secondary-port]", "[-I IP-address]", "-s host", "-k key", "-o value", NULL,
++	"[-v]", "-z server", "[-p port]", "[-l secondary-port]", "[-I IP-address]", "[-s host]", "[-T]", "[-r]", "-i input-file", NULL,
++	"[-v]", "-c config-file", "[-z server]", "[-n secondary-server]", "[-p port]", "[-l secondary-port]", "[-I IP-address]", "[-s host]", "-k key", "-o value",
+ 	NULL,
+-	"[-v]", "-c config-file", "[-z server]", "[-p port]", "[-I IP-address]", "[-s host]", "[-T]", "[-r]",
++	"[-v]", "-c config-file", "[-z server]", "[-n secondary-server]", "[-p port]", "[-l secondary-port]", "[-I IP-address]", "[-s host]", "[-T]", "[-r]",
+ 	"-i input-file", NULL,
+ #if defined(HAVE_POLARSSL) || defined(HAVE_GNUTLS) || defined(HAVE_OPENSSL)
+-	"[-v]", "-z server", "[-p port]", "[-I IP-address]", "-s host", "--tls-connect cert", "--tls-ca-file CA-file",
++	"[-v]", "-z server", "[-p port]", "[-l secondary-port]", "[-I IP-address]", "-s host", "--tls-connect cert", "--tls-ca-file CA-file",
+ 	"[--tls-crl-file CRL-file]", "[--tls-server-cert-issuer cert-issuer]",
+ 	"[--tls-server-cert-subject cert-subject]", "--tls-cert-file cert-file", "--tls-key-file key-file", "-k key",
+ 	"-o value", NULL,
+-	"[-v]", "-z server", "[-p port]", "[-I IP-address]", "[-s host]", "--tls-connect cert", "--tls-ca-file CA-file",
++	"[-v]", "-z server", "[-p port]", "[-l secondary-port]", "[-I IP-address]", "[-s host]", "--tls-connect cert", "--tls-ca-file CA-file",
+ 	"[--tls-crl-file CRL-file]", "[--tls-server-cert-issuer cert-issuer]",
+ 	"[--tls-server-cert-subject cert-subject]", "--tls-cert-file cert-file", "--tls-key-file key-file", "[-T]",
+ 	"[-r]", "-i input-file", NULL,
+-	"[-v]", "-c config-file [-z server]", "[-p port]", "[-I IP-address]", "[-s host]", "--tls-connect cert",
++	"[-v]", "-c config-file [-z server]", "[-p port]", "[-l secondary-port]", "[-I IP-address]", "[-s host]", "--tls-connect cert",
+ 	"--tls-ca-file CA-file", "[--tls-crl-file CRL-file]", "[--tls-server-cert-issuer cert-issuer]",
+ 	"[--tls-server-cert-subject cert-subject]", "--tls-cert-file cert-file", "--tls-key-file key-file", "-k key",
+ 	"-o value", NULL,
+-	"[-v]", "-c config-file", "[-z server]", "[-p port]", "[-I IP-address]", "[-s host]", "--tls-connect cert",
++	"[-v]", "-c config-file", "[-z server]", "[-n secondary-server]", "[-p port]", "[-l secondary-port]", "[-I IP-address]", "[-s host]", "--tls-connect cert",
+ 	"--tls-ca-file CA-file", "[--tls-crl-file CRL-file]", "[--tls-server-cert-issuer cert-issuer]",
+ 	"[--tls-server-cert-subject cert-subject]", "--tls-cert-file cert-file", "--tls-key-file key-file", "[-T]",
+ 	"[-r]", "-i input-file", NULL,
+-	"[-v]", "-z server", "[-p port]", "[-I IP-address]", "-s host", "--tls-connect psk",
++	"[-v]", "-z server", "[-p port]", "[-l secondary-port]", "[-I IP-address]", "-s host", "--tls-connect psk",
+ 	"--tls-psk-identity PSK-identity", "--tls-psk-file PSK-file", "-k key", "-o value", NULL,
+-	"[-v]", "-z server", "[-p port]", "[-I IP-address]", "[-s host]", "--tls-connect psk",
++	"[-v]", "-z server", "[-p port]", "[-l secondary-port]", "[-I IP-address]", "[-s host]", "--tls-connect psk",
+ 	"--tls-psk-identity PSK-identity", "--tls-psk-file PSK-file", "[-T]", "[-r]", "-i input-file", NULL,
+-	"[-v]", "-c config-file", "[-z server]", "[-p port]", "[-I IP-address]", "[-s host]", "--tls-connect psk",
++	"[-v]", "-c config-file", "[-z server]", "[-n secondary-server]", "[-p port]", "[-l secondary-port]", "[-I IP-address]", "[-s host]", "--tls-connect psk",
+ 	"--tls-psk-identity PSK-identity", "--tls-psk-file PSK-file", "-k key", "-o value", NULL,
+-	"[-v]", "-c config-file", "[-z server]", "[-p port]", "[-I IP-address]", "[-s host]", "--tls-connect psk",
++	"[-v]", "-c config-file", "[-z server]", "[-n secondary-server]", "[-p port]", "[-l secondary-port]", "[-I IP-address]", "[-s host]", "--tls-connect psk",
+ 	"--tls-psk-identity PSK-identity", "--tls-psk-file PSK-file", "[-T]", "[-r]", "-i input-file", NULL,
+ #endif
+ 	"-h", NULL,
+@@ -86,12 +86,17 @@
+ 	"                             overrides the first entry of \"ServerActive\"",
+ 	"                             parameter specified in agentd configuration file",
+ 	"",
++	"  -n --secondary-server server Hostname or IP address of secondary Zabbix server or proxy",
++	"",
+ 	"  -p --port port             Specify port number of trapper process of Zabbix",
+ 	"                             server or proxy. When used together with --config,",
+ 	"                             overrides the port of the first entry of",
+ 	"                             \"ServerActive\" parameter specified in agentd",
+ 	"                             configuration file (default: " ZBX_DEFAULT_SERVER_PORT_STR ")",
+ 	"",
++	"  -l --secondary-port port   Specify port number of trapper process of secondary Zabbix",
++	"                             server or proxy (default: " ZBX_DEFAULT_SERVER_PORT_STR ").",
++	"",
+ 	"  -I --source-address IP-address   Specify source IP address. When used",
+ 	"                             together with --config, overrides \"SourceIP\"",
+ 	"                             parameter specified in agentd configuration file",
+@@ -205,7 +210,9 @@
+ {
+ 	{"config",			1,	NULL,	'c'},
+ 	{"zabbix-server",		1,	NULL,	'z'},
++	{"secondary-server",		1,	NULL,	'n'},
+ 	{"port",			1,	NULL,	'p'},
++	{"secondary-port",		1,	NULL,	'l'},
+ 	{"host",			1,	NULL,	's'},
+ 	{"source-address",		1,	NULL,	'I'},
+ 	{"key",				1,	NULL,	'k'},
+@@ -229,7 +236,7 @@
+ };
+ 
+ /* short options */
+-static char	shortopts[] = "c:I:z:p:s:k:o:Ti:rvhV";
++static char	shortopts[] = "c:I:z:n:p:l:s:k:o:Ti:rvhV";
+ 
+ /* end of COMMAND LINE OPTIONS */
+ 
+@@ -241,7 +248,9 @@
+ 
+ static char	*CONFIG_SOURCE_IP = NULL;
+ static char	*ZABBIX_SERVER = NULL;
++static char	*SECONDARY_SERVER = NULL;
+ unsigned short	ZABBIX_SERVER_PORT = 0;
++unsigned short	SECONDARY_SERVER_PORT = 0;
+ static char	*ZABBIX_HOSTNAME = NULL;
+ static char	*ZABBIX_KEY = NULL;
+ static char	*ZABBIX_KEY_VALUE = NULL;
+@@ -261,7 +270,9 @@
+ {
+ 	char		*source_ip;
+ 	char		*server;
++	char		*secondary_server;
+ 	unsigned short	port;
++	unsigned short	secondary_port;
+ 	struct zbx_json	json;
+ #if defined(_WINDOWS) && (defined(HAVE_POLARSSL) || defined(HAVE_GNUTLS) || defined(HAVE_OPENSSL))
+ 	ZBX_THREAD_SENDVAL_TLS_ARGS	tls_vars;
+@@ -519,6 +530,28 @@
+
+ 	if (FAIL == tcp_ret)
+ 		zabbix_log(LOG_LEVEL_DEBUG, "send value error: %s", zbx_socket_strerror());
++
++		if (sendval_args->secondary_server != NULL)
++		{
++			if (SUCCEED == (tcp_ret = zbx_tcp_connect(&sock, CONFIG_SOURCE_IP, sendval_args->secondary_server, sendval_args->secondary_port,
++					GET_SENDER_TIMEOUT, configured_tls_connect_mode, tls_arg1, tls_arg2)))
++			{
++				if (SUCCEED == (tcp_ret = zbx_tcp_send(&sock, sendval_args->json.buffer)))
++				{
++					if (SUCCEED == (tcp_ret = zbx_tcp_recv(&sock)))
++					{
++						zabbix_log(LOG_LEVEL_DEBUG, "secondary answer [%s]", sock.buffer);
++						if (NULL == sock.buffer || FAIL == (ret = check_response(sock.buffer)))
++							zabbix_log(LOG_LEVEL_WARNING, "incorrect answer from secondary server [%s]", sock.buffer);
++					}
++				}
++			}
++
++		zbx_tcp_close(&sock);
++		}
++
++	if (FAIL == tcp_ret)
++		zabbix_log(LOG_LEVEL_DEBUG, "send value to secondary error: %s", zbx_socket_strerror());
+ out:
+ 	zbx_thread_exit(ret);
+ }
+@@ -587,9 +620,24 @@
+ 		if (NULL != cfg_active_hosts && '\0' != *cfg_active_hosts)
+ 		{
+ 			unsigned short	cfg_server_port = 0;
++			unsigned short	cfg_secondary_port = 0;
++			char *r2;
+ 
+ 			if (NULL != (r = strchr(cfg_active_hosts, ',')))
++			{
+ 				*r = '\0';
++				r2 = strchr(r+1, ',');
++				if (r2 != NULL)
++					*r2 = '\0';
++				if (SUCCEED != parse_serveractive_element(r+1, &SECONDARY_SERVER, &cfg_secondary_port, 0))
++				{
++						zbx_error("error parsing a \"ServerActive\" option: address \"%s\" is invalid",
++								r+1);
++						exit(EXIT_FAILURE);
++				}
++				if (0 == SECONDARY_SERVER_PORT && 0 != cfg_secondary_port)
++					SECONDARY_SERVER_PORT = cfg_secondary_port;
++			}
+ 
+ 			if (SUCCEED != parse_serveractive_element(cfg_active_hosts, &ZABBIX_SERVER,
+ 					&cfg_server_port, 0))
+@@ -652,9 +700,16 @@
+ 				if (NULL == ZABBIX_SERVER)
+ 					ZABBIX_SERVER = zbx_strdup(ZABBIX_SERVER, zbx_optarg);
+ 				break;
++			case 'n':
++				if (NULL == SECONDARY_SERVER)
++					SECONDARY_SERVER = zbx_strdup(SECONDARY_SERVER, zbx_optarg);
++				break;
+ 			case 'p':
+ 				ZABBIX_SERVER_PORT = (unsigned short)atoi(zbx_optarg);
+ 				break;
++			case 'l':
++				SECONDARY_SERVER_PORT = (unsigned short)atoi(zbx_optarg);
++				break;
+ 			case 's':
+ 				if (NULL == ZABBIX_HOSTNAME)
+ 					ZABBIX_HOSTNAME = zbx_strdup(ZABBIX_HOSTNAME, zbx_optarg);
+@@ -1035,6 +1090,9 @@
+ 	if (0 == ZABBIX_SERVER_PORT)
+ 		ZABBIX_SERVER_PORT = ZBX_DEFAULT_SERVER_PORT;
+ 
++	if (0 == SECONDARY_SERVER_PORT)
++		SECONDARY_SERVER_PORT = ZBX_DEFAULT_SERVER_PORT;
++
+ 	if (MIN_ZABBIX_PORT > ZABBIX_SERVER_PORT)
+ 	{
+ 		zabbix_log(LOG_LEVEL_CRIT, "Incorrect port number [%d]. Allowed [%d:%d]",
+@@ -1042,11 +1100,20 @@
+ 		goto exit;
+ 	}
+ 
++	if (MIN_ZABBIX_PORT > SECONDARY_SERVER_PORT)
++	{
++		zabbix_log(LOG_LEVEL_CRIT, "Incorrect secondary port number [%d]. Allowed [%d:%d]",
++				(int)SECONDARY_SERVER_PORT, (int)MIN_ZABBIX_PORT, (int)MAX_ZABBIX_PORT);
++		goto exit;
++	}
++
+ 	thread_args.server_num = 0;
+ 	thread_args.args = &sendval_args;
+ 
+ 	sendval_args.server = ZABBIX_SERVER;
+ 	sendval_args.port = ZABBIX_SERVER_PORT;
++	sendval_args.secondary_server = SECONDARY_SERVER;
++	sendval_args.secondary_port = SECONDARY_SERVER_PORT;
+ 
+ 	if (NULL != CONFIG_TLS_CONNECT || NULL != CONFIG_TLS_CA_FILE || NULL != CONFIG_TLS_CRL_FILE ||
+ 			NULL != CONFIG_TLS_SERVER_CERT_ISSUER || NULL != CONFIG_TLS_SERVER_CERT_SUBJECT ||

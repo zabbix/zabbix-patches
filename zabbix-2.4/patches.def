@@ -10,3 +10,12 @@ id|type|details
 2|f|y
 2|desc|Adds an option to disable showing groups without problems in host and system status
 2|ltr|3
+
+3|name|zabbix-2.4-ZBXNEXT-1109
+3|desc|Adds ability for zabbix-sender send values to two servers at same time
+3|ltr|1
+
+4|name|zabbix-2.4-ZBXNEXT-1603
+4|f|y
+4|desc|Adds support of DB READONLY flag in configuration of frontend
+4|ltr|3

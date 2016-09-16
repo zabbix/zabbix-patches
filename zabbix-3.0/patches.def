@@ -17,3 +17,12 @@ id|type|details
 4|name|zabbix-3.0-ZBXNEXT-2315-1
 4|desc|Include response headers for httptest regex required strings
 4|ltr|1
+
+5|name|zabbix-3.0-ZBXNEXT-1109
+5|desc|Adds ability for zabbix-sender send values to two servers at same time
+5|ltr|1
+
+6|name|zabbix-3.0-ZBXNEXT-1603
+6|f|y
+6|desc|Adds support of DB READONLY flag in configuration of frontend
+6|ltr|3
