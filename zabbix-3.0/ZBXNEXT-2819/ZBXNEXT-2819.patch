@@ -1,7 +1,7 @@
 Last-Update: 2016-09-17
 Forwarded: not-needed
 Author: Dmitry Verhoturov <paskal.07@gmail.com>
-Description: adds an option to disable showing groups without problems in system status (ZBXNEXT-2819)
+Description: Adds an option to disable showing groups without problems in system status
 
 --- a/frontends/php/app/controllers/CControllerWidgetSystemView.php
 +++ b/frontends/php/app/controllers/CControllerWidgetSystemView.php

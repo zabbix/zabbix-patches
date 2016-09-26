@@ -26,3 +26,8 @@ id|type|details
 6|f|y
 6|desc|Adds support of DB READONLY flag in configuration of frontend
 6|ltr|3
+
+7|name|ZBXNEXT-2819
+7|f|y
+7|desc|Adds an option to disable showing groups without problems in system status
+7|ltr|3
