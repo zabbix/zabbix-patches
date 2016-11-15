@@ -63,16 +63,17 @@ patches=$(dialog --stdout --checklist "Choose the patches to apply" 0 0 0 "${pat
     exit
 }
 
-pushd zabbix-$zabbix_major_version
+pushd zabbix-$zabbix_major_version > /dev/null
 for patch in $patches; do
+    echo "Applying ${patch_name[$patch]}"
     #TODO: Why are we cp-ing? Is it to keep track of what was done?
     cp ${patch_name[$patch]}/${patch_name[$patch]}.patch $target_dir${patch_frontend_only["$patch"]:+frontends/php}
-    pushd $target_dir${patch_frontend_only["$patch"]:+frontends/php}
+    pushd $target_dir${patch_frontend_only["$patch"]:+frontends/php} > /dev/null
     patch -p ${patch_ltr["$patch"]:-0} -i ${patch_name[$patch]}.patch
-    popd
+    popd > /dev/null
     #TODO: The input to this loop is broken for patches that have no extra files
     while read extra; do
         cp $extra
-    done < <(echo "${patch_extra[$patch]}" | sed -e "s| | $target_dir${patch_frontend_only["$patch"]:+frontends/php/}|" -e "s|^|${patch_name[$patch]}/${patch_name[$patch]}-|")
+    done < <(echo "${patch_extra[$patch]}" | sed -e "s| | $target_dir${patch_frontend_only["$patch"]:+frontends/php/}|" -e "s|^|${patch_name[$patch]}/${patch_name[$patch]}-|") 2> /dev/null
 done
-popd
+popd > /dev/null
