@@ -152,10 +152,10 @@ index 8d5770a..bd2bc3f 100644
  	// column "change"
  	$digits = ($item['value_type'] == ITEM_VALUE_TYPE_FLOAT) ? 2 : 0;
  	if (isset($lastHistory['value']) && isset($prevHistory['value'])
-@@ -784,30 +856,31 @@ foreach ($hosts as $hostId => $dbHost) {
- 
+@@ -749,30 +821,31 @@
+
  	$open_state = CProfile::get('web.latest.toggle_other', null, $host['hostid']);
- 
+
 -	$hostName = null;
 -
 -	if (!$singleHostSelected) {
@@ -175,13 +175,13 @@ index 8d5770a..bd2bc3f 100644
 +			}
  		}
 -	}
- 
+
 -	// add toggle row
 -	$table->addRow([
--		(new CDiv())
+-		(new CSimpleButton())
 -			->addClass(ZBX_STYLE_TREEVIEW)
 -			->addClass('app-list-toggle')
--			->setAttribute('data-app-id', '0_'.$host['hostid'])
+-			->setAttribute('data-host-id', $host['hostid'])
 -			->setAttribute('data-open-state', $open_state)
 -			->addItem(new CSpan()),
 -		'',
@@ -203,6 +203,6 @@ index 8d5770a..bd2bc3f 100644
 +				->setColSpan($filter['showDetails'] ? 10 : 5)
 +		]);
 +	}
- 
+
  	// add toggle sub rows
  	foreach($appRows as $row) {
