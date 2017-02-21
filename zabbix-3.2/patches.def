@@ -21,3 +21,8 @@ id|type|details
 5|f|y
 5|desc|Adds an option to disable showing groups without problems in system status
 5|ltr|3
+
+6|name|ZBX-5470
+6|f|y
+6|desc|Add templateid in "Template cannot be linked to another template" exception
+6|ltr|3
