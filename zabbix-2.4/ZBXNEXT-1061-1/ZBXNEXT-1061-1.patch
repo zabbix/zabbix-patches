@@ -228,14 +228,14 @@ diff --git a/frontends/php/include/views/monitoring.history.php b/frontends/php/
 index e1c9d6d..9b4b45a 100644
 --- a/frontends/php/include/views/monitoring.history.php
 +++ b/frontends/php/include/views/monitoring.history.php
-@@ -46,6 +46,7 @@ if ($this->data['action'] != HISTORY_BATCH_GRAPH) {
+@@ -55,6 +55,7 @@
  			'elid' => $item['itemid'],
  			'elname' => 'itemid'
  		));
 +		$header['right'][] = get_icon('pinned', array('pinned' => $this->data['pinned']));
  	}
  }
- 
+ elseif (count($hostNames) == 1) {
 diff --git a/frontends/php/include/views/monitoring.hostscreen.php b/frontends/php/include/views/monitoring.hostscreen.php
 index 8508265..962615a 100644
 --- a/frontends/php/include/views/monitoring.hostscreen.php
