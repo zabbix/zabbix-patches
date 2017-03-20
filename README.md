@@ -8,7 +8,7 @@ Community maintained patches for Zabbix
 ```
 git clone https://github.com/zabbix/zabbix-patches.git
 cd zabbix-patches
-./patch-zabbix.sh 3.2.0 ~/Desktop/zabbix-3.2.0
+./patch-zabbix.sh 3.2 ~/Desktop/zabbix-3.2.5
 ```
 
 ## Available patches
