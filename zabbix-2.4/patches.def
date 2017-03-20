@@ -24,3 +24,9 @@ id|type|details
 5|f|y
 5|desc|Adds an option to clear items and triggers while using hosts and templates window on template page
 5|ltr|3
+
+6|name|ZBXNEXT-2347
+6|f|y
+6|desc|Add posibility to export inventory page data to CSV
+6|ltr|3
+

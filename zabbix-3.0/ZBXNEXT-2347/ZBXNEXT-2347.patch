@@ -1,0 +1,106 @@
+Last-Update: 2015-12-16
+Forwarded: not-needed
+Author: Ron Jerome, Smolkov Anton
+Description: Add posibility to export inventory page data to CSV.
+
+--- a/frontends/php/hostinventories.php
++++ b/frontends/php/hostinventories.php
+@@ -23,8 +23,36 @@ require_once dirname(__FILE__).'/include/config.inc.php';
+ require_once dirname(__FILE__).'/include/hosts.inc.php';
+ require_once dirname(__FILE__).'/include/forms.inc.php';
+ 
+-$page['title'] = _('Host inventory');
+-$page['file'] = 'hostinventories.php';
++if (isset($_REQUEST['csv_export'])) {
++       $CSV_EXPORT = true;
++       $csvRows = array();
++       $columnheader = array();
++
++       foreach (getHostInventories() as $if) {
++               $allInventoryFields[] = $if['db_field'];
++               $columnheader[] = $if['title'];
++       }
++//Add "Host Name" column header 
++  array_unshift($columnheader,"Host Name");
++
++
++       $csvRows[] = $columnheader;
++
++       $page['type'] = detect_page_type(PAGE_TYPE_CSV);
++       $page['file'] = 'zbx_inventory_export.csv';
++
++       require_once dirname(__FILE__).'/include/func.inc.php';
++
++
++}
++else {
++       $CSV_EXPORT = false;
++
++       $page['title'] = _('Host inventory');
++       $page['file'] = 'hostinventories.php';
++       $page['hist_arg'] = array('groupid', 'hostid');
++}
++
+ 
+ require_once dirname(__FILE__).'/include/page_header.php';
+ 
+@@ -255,6 +283,50 @@ else {
+ 		}
+ 	}
+ 
++
++	if ($CSV_EXPORT) {
++		$csvOptions = array(
++				'output' => array( 'name', 'status'),
++				'selectInventory' => $allInventoryFields,
++				'withInventory' => true,
++				'selectGroups' => API_OUTPUT_EXTEND,
++				//'groupids' => getRequest('groupid', null)
++		);
++		
++		if ($data['pageFilter']->groupid > 0) {
++			$csvOptions['groupids'] = $data['pageFilter']->groupid;
++		}
++		
++		$data['hosts'] = API::Host()->get($csvOptions);
++		
++		foreach($data['hosts'] as $num => $host) {
++			// remove host id...
++		array_shift($host['inventory']);
++                        //Add "Host Name" to csv export first column
++                array_unshift($host['inventory'],$host['name']);             
++        	$csvRows[] = $host['inventory'];
++
++
++		if(!empty($data['filterField']) && !empty($data['filterFieldValue'])) {
++				// must we filter exactly or using a substring (both are case insensitive)
++				$match = $data['filterExact']
++				? mb_strtolower($data['hosts'][$num]['inventory'][$data['filterField']]) === mb_strtolower($data['filterFieldValue'])
++				: mb_strpos(
++						mb_strtolower($data['hosts'][$num]['inventory'][$data['filterField']]),
++						mb_strtolower($data['filterFieldValue'])
++				) !== false;
++				if (!$match) {
++					array_pop($csvRows);
++				}
++			}
++		}
++		
++		print(zbx_toCSV($csvRows));
++		exit();
++	}
++
++
++
+ 	$url = (new CUrl('hostinventories.php'))
+ 		->setArgument('groupid', $data['pageFilter']->groupid);
+ 
+--- a/frontends/php/include/views/inventory.host.list.php
++++ b/frontends/php/include/views/inventory.host.list.php
+@@ -27,6 +27,7 @@
+ 				(new CDiv())->addClass(ZBX_STYLE_FORM_INPUT_MARGIN),
+ 				$this->data['pageFilter']->getGroupsCB()
+ 			])
++            ->addItem(new CSubmit('csv_export', _('Export to CSV')))
+ 		)
+ 	);
