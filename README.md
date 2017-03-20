@@ -15,6 +15,8 @@ cd zabbix-patches
 
 ### Zabbix 2.4
 
+[ZBXNEXT-543](https://support.zabbix.com/browse/ZBXNEXT-543): Adds an option to clear items and triggers while using hosts and templates window on template page.
+
 [ZBXNEXT-1061](https://support.zabbix.com/browse/ZBXNEXT-1061): Adds pin/unpin icon that allows keeping the time period when switching between graphs and screens
 
 [ZBXNEXT-1109](https://support.zabbix.com/browse/ZBXNEXT-1109): Adds ability for zabbix-sender send values to two servers at same time
@@ -42,6 +44,8 @@ cd zabbix-patches
 [ZBX-5470](https://support.zabbix.com/browse/ZBX-5470): Add templateid in "Template cannot be linked to another template" exception
 
 ### Zabbix 3.2
+
+[ZBXNEXT-543](https://support.zabbix.com/browse/ZBXNEXT-543): Adds an option to clear items and triggers while using hosts and templates window on template page.
 
 [ZBXNEXT-1109](https://support.zabbix.com/browse/ZBXNEXT-1109): Adds ability for zabbix-sender send values to two servers at same time
 

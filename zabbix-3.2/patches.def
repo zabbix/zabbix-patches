@@ -26,3 +26,8 @@ id|type|details
 6|f|y
 6|desc|Add templateid in "Template cannot be linked to another template" exception
 6|ltr|3
+
+7|name|ZBXNEXT-543
+7|f|y
+7|desc|Adds an option to clear items and triggers while using hosts and templates window on template page
+7|ltr|3

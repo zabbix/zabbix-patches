@@ -1,0 +1,78 @@
+Last-Update: 2015-12-15
+Forwarded: not-needed
+Author: storex
+Description: Adds an option to clear items and triggers while using hosts and templates window on template page.
+
+--- a/frontends/php/include/views/configuration.template.edit.php
++++ b/frontends/php/include/views/configuration.template.edit.php
+@@ -229,6 +229,15 @@ $templateList->addRow(_('Hosts / templates'), $host_tb->Get(_('In'), array(
+
+ $templateList->addRow(_('Description'), new CTextArea('description', $this->data['description']));
+
++$templatesDiv = new CDiv(array(
++			new CCheckBox('mass_clear_hosts', $this->data['mass_clear_hosts']),
++			SPACE,
++			_('Clear when unlinking')
++		), 'floatleft');
++
++$templatesDiv->setAttribute('id', 'templateDiv');
++$templateList->addRow($templatesDiv);
++
+ // FULL CLONE {
+ if ($_REQUEST['form'] == 'full_clone') {
+ 	// template applications
+--- a/frontends/php/templates.php
++++ b/frontends/php/templates.php
+@@ -56,6 +56,7 @@ $fields = array(
+ 	'visiblename'		=> array(T_ZBX_STR, O_OPT, null,		null,	'isset({add}) || isset({update})'),
+ 	'groupid'			=> array(T_ZBX_INT, O_OPT, P_SYS,		DB_ID,	null),
+ 	'twb_groupid'		=> array(T_ZBX_INT, O_OPT, P_SYS,		DB_ID,	null),
++	'mass_clear_hosts'	=> array(T_ZBX_STR, O_OPT, null,		null,	null),
+ 	'newgroup'			=> array(T_ZBX_STR, O_OPT, null,		null,	null),
+ 	'description'		=> array(T_ZBX_STR, O_OPT, null,		null,	null),
+ 	'macros_rem'		=> array(T_ZBX_STR, O_OPT, P_SYS|P_ACT,	null,	null),
+@@ -216,6 +217,13 @@ elseif (hasRequest('add') || hasRequest('update')) {
+ 			'templated_hosts' => true,
+ 			'filter' => array('flags' => ZBX_FLAG_DISCOVERY_NORMAL)
+ 		));
++
++		$hostIds = zbx_objectValues($dbHosts, 'hostid');
++		$templateHosts = API::Host()->get(array(
++					'templateids' => $templateId
++				));
++		$templateHostsIds = zbx_objectValues($templateHosts, 'hostid');
++		$hostsToDelete = array_diff($templateHostsIds, $hostIds);
+ 
+ 		// create / update template
+ 		$template = array(
+@@ -231,6 +239,18 @@ elseif (hasRequest('add') || hasRequest('update')) {
+ 		if ($templateId) {
+ 			$template['templateid'] = $templateId;
+ 			$template['templates_clear'] = $templatesClear;
++
++			if (isset($_REQUEST['mass_clear_hosts'])) {
++				if ($hostsToDelete) {
++					$hosts = array(
++					'hosts' => zbx_toObject($hostsToDelete, 'hostid' ),
++								'templates_clear' => array('templateid' => $templateId)
++							);
++					if (!API::Host()->massupdate($hosts)) {
++						throw new Exception();
++					}
++				}
++			}
+ 
+ 			$messageSuccess = _('Template updated');
+ 			$messageFailed = _('Cannot update template');
+@@ -437,7 +457,10 @@ if (isset($_REQUEST['form'])) {
+ 		$templateWidget->addItem(get_header_host_table('', $templateId));
+ 	}
+ 
+-	$data = array();
++	$data = array(
++			'groupIds' => getRequest('groups', array()),
++			'mass_clear_hosts' => getRequest('mass_clear_hosts')
++		);
+ 
+ 	if ($templateId) {
+ 		$dbTemplates = API::Template()->get(array(
