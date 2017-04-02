@@ -1,3 +1,8 @@
+Last-Update: 2017-04-02
+Forwarded: not-needed
+Author: Andrey Denisov <anjey.denisov@gmail.com>
+Description: Adds support of PK(itemid,clock) for history, history_uint tables
+
 --- a/include/db.h   2017-02-27 12:22:38.000000000 +0300
 +++ b/include/db.h   2017-03-30 14:34:35.000000000 +0300
 @@ -545,6 +545,7 @@
