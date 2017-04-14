@@ -27,6 +27,11 @@ id|type|details
 6|desc|Add templateid in "Template cannot be linked to another template" exception
 6|ltr|3
 
-7|name|ZBXNEXT-3089
-7|desc|Adds support of PK(itemid,clock) for history, history_uint tables. Exact version: Zabbix v3.2.4
-7|ltr|1
+7|name|ZBXNEXT-543
+7|f|y
+7|desc|Adds an option to clear items and triggers while using hosts and templates window on template page
+7|ltr|3
+
+8|name|ZBXNEXT-3089
+8|desc|Adds support of PK(itemid,clock) for history, history_uint tables. Exact version: Zabbix v3.2.4
+8|ltr|1

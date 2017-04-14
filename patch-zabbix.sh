@@ -11,12 +11,11 @@ command -v dialog > /dev/null 2>&1 || { echo >&2 "This script requires 'dialog'.
 $0 zabbix_version target_directory
 
 Example:
-$0 2.4.8 /path/to/frontend"
+$0 3.2 /path/to/frontend"
     exit
 }
 
-zabbix_version=$1
-zabbix_major_version=${zabbix_version%.*}
+zabbix_major_version=$1
 target_dir=$2
 
 [[ -d $target_dir ]] || {
