@@ -1,0 +1,128 @@
+Last-Update: 2017-04-02
+Forwarded: not-needed
+Author: Andrey Denisov <anjey.denisov@gmail.com>
+Description: Adds support of PK(itemid,clock) for history, history_uint tables. Exact version: Zabbix v3.2.4
+
+--- a/include/db.h   2017-02-27 12:22:38.000000000 +0300
++++ b/include/db.h   2017-03-30 14:34:35.000000000 +0300
+@@ -545,6 +545,7 @@
+ void   DBproxy_register_host(const char *host, const char *ip, const char *dns, unsigned short port,
+                const char *host_metadata);
+ int    DBexecute_overflowed_sql(char **sql, size_t *sql_alloc, size_t *sql_offset);
++int    DBexecute_overflowed_sql_PK(char **sql, size_t *sql_alloc, size_t *sql_offset);
+ char   *DBget_unique_hostname_by_sample(const char *host_name_sample);
+
+ const char     *DBsql_id_ins(zbx_uint64_t id);
+ 
+--- a/src/libs/zbxdbhigh/db.c        2017-02-27 12:22:38.000000000 +0300
++++ b/src/libs/zbxdbhigh/db.c      2017-04-02 09:27:53.356033333 +0300
+@@ -1457,6 +1457,44 @@
+
+ /******************************************************************************
+  *                                                                            *
++ * Function: DBexecute_overflowed_sql_PK                                         *
++ *                                                                            *
++ * Purpose: execute a set of SQL statements IF it is big enough and field have PK and value field               *
++ *                                                                            *
++ * Author: Dmitry Borovikov                                                   *
++ *                                                                            *
++ ******************************************************************************/
++int    DBexecute_overflowed_sql_PK(char **sql, size_t *sql_alloc, size_t *sql_offset)
++{
++       int     ret = SUCCEED;
++
++       if (ZBX_MAX_SQL_SIZE < *sql_offset)
++       {
++#ifdef HAVE_MULTIROW_INSERT
++               if (',' == (*sql)[*sql_offset - 1])
++               {
++                       (*sql_offset)--;
++#              ifdef HAVE_MYSQL
++                       zbx_strcpy_alloc(sql, sql_alloc, sql_offset, " ON DUPLICATE KEY UPDATE value=VALUES(value);\n");
++#              else
++                       zbx_strcpy_alloc(sql, sql_alloc, sql_offset, ";\n");
++#              endif
++               }
++#endif
++               DBend_multiple_update(sql, sql_alloc, sql_offset);
++
++               if (ZBX_DB_OK > DBexecute("%s", *sql))
++                       ret = FAIL;
++               *sql_offset = 0;
++
++               DBbegin_multiple_update(sql, sql_alloc, sql_offset);
++       }
++
++       return ret;
++}
++
++/******************************************************************************
++ *                                                                            *
+  * Function: DBget_unique_hostname_by_sample                                  *
+  *                                                                            *
+  * Purpose: construct a unique host name by the given sample                  *
+@@ -2192,6 +2230,10 @@
+ int    zbx_db_insert_execute(zbx_db_insert_t *self)
+ {
+        int             ret = FAIL, i, j;
++       int     isPK = 0;
++       char*   history_tab="history";
++       char*   history_uint_tab="history_uint";
++
+        const ZBX_FIELD *field;
+        char            *sql_command, delim[2] = {',', '('};
+        size_t          sql_command_alloc = 512, sql_command_offset = 0;
+@@ -2212,6 +2254,14 @@
+        if (0 == self->rows.values_num)
+                return SUCCEED;
+
++#ifdef HAVE_MYSQL
++       if(strcmp(self->table->table,history_tab) == 0 || strcmp(self->table->table,history_uint_tab) == 0)
++               isPK = 1;
++       zabbix_log(LOG_LEVEL_DEBUG, "zbx_db_insert_execute: in HAVE_MYSQL: history_tab=[%s], history_uint_tab=[%s], isPK=[%d]", history_tab,history_uint_tab,isPK);
++#endif
++
++       zabbix_log(LOG_LEVEL_DEBUG, "zbx_db_insert_execute: table=[%s], isPK=[%d]", self->table->table, isPK);
++
+        /* process the auto increment field */
+        if (-1 != self->autoincrement)
+        {
+@@ -2393,8 +2443,18 @@
+
+                zbx_strcpy_alloc(&sql, &sql_alloc, &sql_offset, ")" ZBX_ROW_DL);
+
++#      ifdef HAVE_MYSQL
++               if(1 == isPK){
++                       ret = DBexecute_overflowed_sql_PK(&sql, &sql_alloc, &sql_offset);
++               } else{
++                       ret = DBexecute_overflowed_sql(&sql, &sql_alloc, &sql_offset);
++               }
++               if (SUCCEED != ret)
++                       goto out;
++#      else
+                if (SUCCEED != (ret = DBexecute_overflowed_sql(&sql, &sql_alloc, &sql_offset)))
+                        goto out;
++#      endif
+        }
+
+        if (16 < sql_offset)
+@@ -2403,9 +2463,19 @@
+                if (',' == sql[sql_offset - 1])
+                {
+                        sql_offset--;
++#              ifdef HAVE_MYSQL
++                       if(1 == isPK){
++                               zbx_strcpy_alloc(&sql, &sql_alloc, &sql_offset, " ON DUPLICATE KEY UPDATE value=VALUES(value);\n");
++                       }else{
+                        zbx_strcpy_alloc(&sql, &sql_alloc, &sql_offset, ";\n");
+                }
++#              else
++                       zbx_strcpy_alloc(&sql, &sql_alloc, &sql_offset, ";\n");
+ #      endif
++               }
++#      endif
++
++               zabbix_log(LOG_LEVEL_DEBUG, "zbx_db_insert_execute: isPK=[%d], sql=[%s]",isPK, sql);
+                DBend_multiple_update(sql, sql_alloc, sql_offset);
+
+                if (ZBX_DB_OK > DBexecute("%s", sql))

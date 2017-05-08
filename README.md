@@ -62,3 +62,5 @@ cd zabbix-patches
 [ZBXNEXT-2819](https://support.zabbix.com/browse/ZBXNEXT-2819): Adds an option to disable showing groups without problems in system status
 
 [ZBX-5470](https://support.zabbix.com/browse/ZBX-5470): Add templateid in "Template cannot be linked to another template" exception
+
+[ZBXNEXT-3089](https://support.zabbix.com/browse/ZBXNEXT-3089): Adds support of PK(itemid,clock) for history, history_uint tables. Exact version: Zabbix v3.2.4
