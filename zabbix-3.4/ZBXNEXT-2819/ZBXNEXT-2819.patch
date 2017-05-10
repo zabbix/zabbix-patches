@@ -1,0 +1,118 @@
+Last-Update: 2016-09-17
+Forwarded: not-needed
+Author: Dmitry Verhoturov <paskal.07@gmail.com>
+Description: Adds an option to disable showing groups without problems in system status
+
+--- a/frontends/php/app/controllers/CControllerWidgetSystemView.php
++++ b/frontends/php/app/controllers/CControllerWidgetSystemView.php
+@@ -39,6 +39,7 @@
+ 		$filter = [
+ 			'groupids' => null,
+ 			'maintenance' => null,
++			'dontshowgreen' => null,
+ 			'severity' => null,
+ 			'trigger_name' => '',
+ 			'extAck' => 0
+@@ -46,6 +47,8 @@
+ 
+ 		if (CProfile::get('web.dashconf.filter.enable', 0) == 1) {
+ 			// groups
++			$dontshowgreen = CProfile::get('web.dashconf.groups.dontshowgreen', 1);
++			$filter['dontshowgreen'] = ($dontshowgreen == 1) ? 0 : null;
+ 			if (CProfile::get('web.dashconf.groups.grpswitch', 0) == 0) {
+ 				// null mean all groups
+ 				$filter['groupids'] = null;
+--- a/frontends/php/dashconf.php
++++ b/frontends/php/dashconf.php
+@@ -39,6 +39,7 @@
+ 	'grpswitch' =>					[T_ZBX_INT, O_OPT, P_SYS,			BETWEEN(0, 1),	null],
+ 	'groupids' =>					[T_ZBX_INT, O_OPT, P_SYS,			null,			null],
+ 	'hidegroupids' =>				[T_ZBX_INT, O_OPT, P_SYS,			null,			null],
++	'dontshowgreen' =>				[T_ZBX_INT, O_OPT, P_SYS,			BETWEEN(0, 1),	null],
+ 	'trgSeverity' =>				[T_ZBX_INT, O_OPT, P_SYS,			null,			null],
+ 	'trigger_name' =>				[T_ZBX_STR, O_OPT, P_SYS,			null,			null],
+ 	'maintenance' =>				[T_ZBX_INT, O_OPT, P_SYS,			BETWEEN(0, 1),	null],
+@@ -61,6 +61,8 @@
+ 		// groups
+ 		CProfile::update('web.dashconf.groups.grpswitch', $_REQUEST['grpswitch'], PROFILE_TYPE_INT);
+
++		CProfile::update('web.dashconf.groups.dontshowgreen', getRequest('dontshowgreen', 0), PROFILE_TYPE_INT);
++
+ 		if ($_REQUEST['grpswitch'] == 1) {
+ 			// show groups
+ 			$groupids = getRequest('groupids', []);
+@@ -122,6 +124,7 @@
+ if (hasRequest('form_refresh')) {
+ 	$data['isFilterEnable'] = getRequest('filterEnable', 0);
+ 	$data['maintenance'] = getRequest('maintenance', 0);
++	$data['dontshowgreen'] = getRequest('dontshowgreen', 0);
+ 	$data['extAck'] = getRequest('extAck', 0);
+
+ 	$data['severity'] = getRequest('trgSeverity', []);
+@@ -136,6 +139,7 @@
+ else {
+ 	$data['isFilterEnable'] = CProfile::get('web.dashconf.filter.enable', 0);
+ 	$data['maintenance'] = CProfile::get('web.dashconf.hosts.maintenance', 1);
++	$data['dontshowgreen'] = CProfile::get('web.dashconf.groups.dontshowgreen', 0);
+ 	$data['extAck'] = CProfile::get('web.dashconf.events.extAck', 0);
+
+ 	$data['severity'] = CProfile::get('web.dashconf.triggers.severity', '0;1;2;3;4;5');
+--- a/frontends/php/include/blocks.inc.php
++++ b/frontends/php/include/blocks.inc.php
+@@ -397,6 +397,7 @@
+ 	unset($triggers);
+
+ 	foreach ($groups as $group) {
++		$total = 0;
+ 		$groupRow = new CRow();
+
+ 		$name = new CLink($group['name'], 'tr_status.php?filter_set=1&groupid='.$group['groupid'].'&hostid=0'.
+@@ -426,16 +427,19 @@
+
+ 			switch ($filter['extAck']) {
+ 				case EXTACK_OPTION_ALL:
++					$total = $total + $data['count'];
+ 					$groupRow->addItem(getSeverityCell($severity, $config, $allTriggersNum, $data['count'] == 0));
+ 					break;
+
+ 				case EXTACK_OPTION_UNACK:
++					$total = $total + $data['count_unack'];
+ 					$groupRow->addItem(getSeverityCell($severity, $config, $unackTriggersNum,
+ 						$data['count_unack'] == 0
+ 					));
+ 					break;
+
+ 				case EXTACK_OPTION_BOTH:
++					$total = $total + $data['count'];
+ 					if ($data['count_unack'] != 0) {
+ 						$groupRow->addItem(getSeverityCell($severity, $config, [
+ 							$unackTriggersNum, ' '._('of').' ', $allTriggersNum
+@@ -448,7 +452,9 @@
+ 			}
+ 		}
+
+-		$table->addRow($groupRow);
++		if (!isset($filter['dontshowgreen']) || $total > 0) {
++			$table->addRow($groupRow);
++		}
+ 	}
+
+ 	return $table;
+--- a/frontends/php/include/views/monitoring.dashconf.php
++++ b/frontends/php/include/views/monitoring.dashconf.php
+@@ -89,6 +89,15 @@
+ 	new CLabel([$maintenanceCheckBox, _('Show hosts in maintenance')], 'maintenance')
+ );
+
++// append don't show green groups checkbox to form list
++$dontshowgreenCheckBox = (new CCheckBox('dontshowgreen'))->setChecked($this->data['dontshowgreen'] == 1);
++if (!$this->data['isFilterEnable']) {
++	$dontshowgreenCheckBox->setAttribute('disabled', 'disabled');
++}
++$form_list->addRow(_('Groups'),
++	new CLabel([$dontshowgreenCheckBox, _('Do not show groups without problems in system and host statuses')], 'dontshowgreen')
++);
++
+ // append trigger severities to form list
+ $severities = [];
+ foreach ($this->data['severities'] as $severity) {

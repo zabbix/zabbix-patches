@@ -1,0 +1,16 @@
+Last-Update: 2017-01-24
+Forwarded: not-needed
+Author: Dmitry Verhoturov <paskal.07@gmail.com>
+Description: Add templateid in "Template cannot be linked to another template" exception
+
+--- a/frontends/php/include/classes/api/services/CHostBase.php
++++ b/frontends/php/include/classes/api/services/CHostBase.php
+@@ -250,7 +250,7 @@
+ 				self::exception(ZBX_API_ERROR_PARAMETERS, _('Circular template linkage is not allowed.'));
+ 			}
+ 			else {
+-				self::exception(ZBX_API_ERROR_PARAMETERS, _('Template cannot be linked to another template more than once even through other templates.'));
++				self::exception(ZBX_API_ERROR_PARAMETERS, _('Template cannot be linked to another template more than once even through other templates. Template id: ' . $current));
+ 			}
+ 		}
+ 		$path[$current] = 1;

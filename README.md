@@ -64,3 +64,21 @@ cd zabbix-patches
 [ZBX-5470](https://support.zabbix.com/browse/ZBX-5470): Add templateid in "Template cannot be linked to another template" exception
 
 [ZBXNEXT-3089](https://support.zabbix.com/browse/ZBXNEXT-3089): Adds support of PK(itemid,clock) for history, history_uint tables. Exact version: Zabbix v3.2.4
+
+### Zabbix 3.4
+
+[ZBXNEXT-543](https://support.zabbix.com/browse/ZBXNEXT-543): Adds an option to clear items and triggers while using hosts and templates window on template page.
+
+[ZBXNEXT-1109](https://support.zabbix.com/browse/ZBXNEXT-1109): Adds ability for zabbix-sender send values to two servers at same time
+
+[ZBXNEXT-1456](https://support.zabbix.com/browse/ZBXNEXT-1456): Filter discovered items on items list page
+
+[ZBXNEXT-1810](https://support.zabbix.com/browse/ZBXNEXT-1810): Filter latest data by item value (regex and substring)
+
+[ZBXNEXT-2315](https://support.zabbix.com/browse/ZBXNEXT-2315): Include response headers for httptest regex required strings
+
+[ZBXNEXT-2819](https://support.zabbix.com/browse/ZBXNEXT-2819): Adds an option to disable showing groups without problems in system status
+
+[ZBX-5470](https://support.zabbix.com/browse/ZBX-5470): Add templateid in "Template cannot be linked to another template" exception
+
+[ZBXNEXT-3089](https://support.zabbix.com/browse/ZBXNEXT-3089): Adds support of PK(itemid,clock) for history, history_uint tables. Exact version: Zabbix v3.2.4
