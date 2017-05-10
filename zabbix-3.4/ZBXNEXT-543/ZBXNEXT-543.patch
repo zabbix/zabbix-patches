@@ -1,0 +1,74 @@
+Last-Update: 2017-03-16
+Forwarded: not-needed
+Author: storex
+Description: Adds an option to clear items and triggers while using hosts and templates window on template page.
+
+--- a/frontends/php/include/views/configuration.template.edit.php
++++ b/frontends/php/include/views/configuration.template.edit.php
+@@ -158,6 +158,15 @@
+ 	$cmbGroups
+ ]));
+ 
++$templatesDiv = new CDiv(array(
++	    new CCheckBox('mass_clear_hosts', $this->data['mass_clear_hosts']),
++	    SPACE,
++	    _('Clear when unlinking')
++	), 'floatleft');
++
++$templatesDiv->setAttribute('id', 'templateDiv');
++$templateList->addRow($templatesDiv);
++
+ $templateList->addRow(_('Description'),
+ 	(new CTextArea('description', $this->data['description']))->setWidth(ZBX_TEXTAREA_STANDARD_WIDTH)
+ );
+--- a/frontends/php/templates.php
++++ b/frontends/php/templates.php
+@@ -55,6 +55,7 @@
+ 	'visiblename'		=> [T_ZBX_STR, O_OPT, null,		null,	'isset({add}) || isset({update})'],
+ 	'groupid'			=> [T_ZBX_INT, O_OPT, P_SYS,		DB_ID,	null],
+ 	'twb_groupid'		=> [T_ZBX_INT, O_OPT, P_SYS,		DB_ID,	null],
++	'mass_clear_hosts'	=> [T_ZBX_STR, O_OPT, null,		null,	null],
+ 	'newgroup'			=> [T_ZBX_STR, O_OPT, null,		null,	null],
+ 	'description'		=> [T_ZBX_STR, O_OPT, null,		null,	null],
+ 	'macros'			=> [T_ZBX_STR, O_OPT, P_SYS,		null,	null],
+@@ -225,6 +226,13 @@
+ 			'templated_hosts' => true,
+ 			'filter' => ['flags' => ZBX_FLAG_DISCOVERY_NORMAL]
+ 		]);
++		
++		$hostIds = zbx_objectValues($dbHosts, 'hostid');
++		$templateHosts = API::Host()->get([
++			'templateids' => $templateId
++		]);
++		$templateHostsIds = zbx_objectValues($templateHosts, 'hostid');
++		$hostsToDelete = array_diff($templateHostsIds, $hostIds);
+ 
+ 		$templateName = getRequest('template_name', '');
+ 
+@@ -252,6 +260,18 @@
+ 		else {
+ 			$template['templateid'] = $templateId;
+ 			$template['templates_clear'] = $templatesClear;
++			
++			if (isset($_REQUEST['mass_clear_hosts'])) {
++				if ($hostsToDelete) {
++					$hosts = [
++						'hosts' => zbx_toObject($hostsToDelete, 'hostid' ),
++						'templates_clear' => array('templateid' => $templateId)
++					];
++					if (!API::Host()->massupdate($hosts)) {
++						throw new Exception();
++					}
++				}
++			}
+ 
+ 			$result = API::Template()->update($template);
+ 
+@@ -437,6 +457,7 @@
+ 		'form' => getRequest('form'),
+ 		'groupId' => getRequest('groupid', 0),
+ 		'groupIds' => getRequest('groups', []),
++		'mass_clear_hosts' => getRequest('mass_clear_hosts'),
+ 		'templateid' => getRequest('templateid', 0),
+ 		'show_inherited_macros' => getRequest('show_inherited_macros', 0)
+ 	];
