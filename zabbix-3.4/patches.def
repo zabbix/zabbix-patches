@@ -17,21 +17,16 @@ id|type|details
 4|desc|Adds ability for zabbix-sender send values to two servers at same time
 4|ltr|1
 
-5|name|ZBXNEXT-2819
+5|name|ZBX-5470
 5|f|y
-5|desc|Adds an option to disable showing groups without problems in system status
+5|desc|Add templateid in "Template cannot be linked to another template" exception
 5|ltr|3
 
-6|name|ZBX-5470
+6|name|ZBXNEXT-543
 6|f|y
-6|desc|Add templateid in "Template cannot be linked to another template" exception
+6|desc|Adds an option to clear items and triggers while using hosts and templates window on template page
 6|ltr|3
 
-7|name|ZBXNEXT-543
-7|f|y
-7|desc|Adds an option to clear items and triggers while using hosts and templates window on template page
-7|ltr|3
-
-8|name|ZBXNEXT-3089
-8|desc|Adds support of PK(itemid,clock) for history, history_uint tables. Exact version: Zabbix v3.2.4
-8|ltr|1
+7|name|ZBXNEXT-3089
+7|desc|Adds support of PK(itemid,clock) for history, history_uint tables. Exact version: Zabbix v3.2.4
+7|ltr|1
