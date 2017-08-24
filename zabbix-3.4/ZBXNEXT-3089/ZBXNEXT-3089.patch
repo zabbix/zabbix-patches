@@ -5,18 +5,18 @@ Description: Adds support of PK(itemid,clock) for history, history_uint tables
 
 --- a/include/db.h
 +++ b/include/db.h
-@@ -545,6 +545,7 @@
+@@ -580,6 +580,7 @@
  void	DBproxy_register_host(const char *host, const char *ip, const char *dns, unsigned short port,
  		const char *host_metadata);
  int	DBexecute_overflowed_sql(char **sql, size_t *sql_alloc, size_t *sql_offset);
 +int	DBexecute_overflowed_sql_PK(char **sql, size_t *sql_alloc, size_t *sql_offset);
  char	*DBget_unique_hostname_by_sample(const char *host_name_sample);
- 
+
  const char	*DBsql_id_ins(zbx_uint64_t id);
 --- a/src/libs/zbxdbhigh/db.c
 +++ b/src/libs/zbxdbhigh/db.c
-@@ -1457,6 +1457,45 @@
- 
+@@ -1485,6 +1485,45 @@
+
  /******************************************************************************
   *                                                                            *
 + * Function: DBexecute_overflowed_sql_PK                                      *
@@ -61,7 +61,7 @@ Description: Adds support of PK(itemid,clock) for history, history_uint tables
   * Function: DBget_unique_hostname_by_sample                                  *
   *                                                                            *
   * Purpose: construct a unique host name by the given sample                  *
-@@ -2192,6 +2231,10 @@
+@@ -2226,6 +2265,10 @@
  int	zbx_db_insert_execute(zbx_db_insert_t *self)
  {
  	int		ret = FAIL, i, j;
@@ -72,10 +72,10 @@ Description: Adds support of PK(itemid,clock) for history, history_uint tables
  	const ZBX_FIELD	*field;
  	char		*sql_command, delim[2] = {',', '('};
  	size_t		sql_command_alloc = 512, sql_command_offset = 0;
-@@ -2212,6 +2255,14 @@
+@@ -2246,6 +2289,14 @@
  	if (0 == self->rows.values_num)
  		return SUCCEED;
- 
+
 +#ifdef HAVE_MYSQL
 +	if(strcmp(self->table->table,history_tab) == 0 || strcmp(self->table->table,history_uint_tab) == 0)
 +		isPK = 1;
@@ -87,10 +87,10 @@ Description: Adds support of PK(itemid,clock) for history, history_uint tables
  	/* process the auto increment field */
  	if (-1 != self->autoincrement)
  	{
-@@ -2393,8 +2444,18 @@
- 
+@@ -2427,8 +2478,18 @@
+
  		zbx_strcpy_alloc(&sql, &sql_alloc, &sql_offset, ")" ZBX_ROW_DL);
- 
+
 +#	ifdef HAVE_MYSQL
 +		if(1 == isPK){
 +			ret = DBexecute_overflowed_sql_PK(&sql, &sql_alloc, &sql_offset);
@@ -104,9 +104,9 @@ Description: Adds support of PK(itemid,clock) for history, history_uint tables
  			goto out;
 +#	endif
  	}
- 
+
  	if (16 < sql_offset)
-@@ -2403,9 +2464,19 @@
+@@ -2437,9 +2498,19 @@
  		if (',' == sql[sql_offset - 1])
  		{
  			sql_offset--;
@@ -124,5 +124,6 @@ Description: Adds support of PK(itemid,clock) for history, history_uint tables
 +
 +		zabbix_log(LOG_LEVEL_DEBUG, "zbx_db_insert_execute: isPK=[%d], sql=[%s]",isPK, sql);
  		DBend_multiple_update(sql, sql_alloc, sql_offset);
- 
+
  		if (ZBX_DB_OK > DBexecute("%s", sql))
+

@@ -6,7 +6,7 @@ Date:   Wed May 25 13:03:56 2016 +0200
 
 --- a/src/zabbix_server/httppoller/httptest.c
 +++ b/src/zabbix_server/httppoller/httptest.c
-@@ -391,6 +391,7 @@
+@@ -756,6 +756,7 @@
 
  	if (CURLE_OK != (err = curl_easy_setopt(easyhandle, CURLOPT_PROXY, httptest->httptest.http_proxy)) ||
  			CURLE_OK != (err = curl_easy_setopt(easyhandle, CURLOPT_COOKIEFILE, "")) ||

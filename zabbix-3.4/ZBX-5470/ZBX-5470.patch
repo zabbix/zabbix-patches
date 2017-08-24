@@ -5,7 +5,7 @@ Description: Add templateid in "Template cannot be linked to another template" e
 
 --- a/frontends/php/include/classes/api/services/CHostBase.php
 +++ b/frontends/php/include/classes/api/services/CHostBase.php
-@@ -250,7 +250,7 @@
+@@ -257,7 +257,7 @@
  				self::exception(ZBX_API_ERROR_PARAMETERS, _('Circular template linkage is not allowed.'));
  			}
  			else {

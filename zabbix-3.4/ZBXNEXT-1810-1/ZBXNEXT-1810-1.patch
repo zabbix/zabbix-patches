@@ -6,9 +6,9 @@ Date:   Sat Mar 26 23:42:30 2016 +0100
 
 --- a/include/defines.inc.php
 +++ b/include/defines.inc.php
-@@ -635,6 +635,11 @@
-
- define('DEFAULT_LATEST_ISSUES_CNT', 20);
+@@ -704,6 +704,11 @@
+ define('DASHBOARD_MAX_ROWS', 64);
+ define('DASHBOARD_MAX_COLUMNS', 12);
 
 +define('LATEST_DATA_MATCH_SUBSTRING', 0);
 +define('LATEST_DATA_MATCH_NOT_SUBSTRING', 1);
@@ -20,7 +20,7 @@ Date:   Sat Mar 26 23:42:30 2016 +0100
  define('HALIGN_CENTER',		0);
 --- a/latest.php
 +++ b/latest.php
-@@ -40,6 +40,8 @@
+@@ -41,6 +41,8 @@
  	'hostids' =>			[T_ZBX_INT, O_OPT, P_SYS,	DB_ID,		null],
  	'fullscreen' =>			[T_ZBX_INT, O_OPT, P_SYS,	IN('0,1'),	null],
  	'select' =>				[T_ZBX_STR, O_OPT, null,	null,		null],
@@ -29,7 +29,7 @@ Date:   Sat Mar 26 23:42:30 2016 +0100
  	'show_without_data' =>	[T_ZBX_INT, O_OPT, null,	IN('0,1'),	null],
  	'show_details' =>		[T_ZBX_INT, O_OPT, null,	IN('0,1'),	null],
  	'application' =>		[T_ZBX_STR, O_OPT, null,	null,		null],
-@@ -73,6 +75,8 @@
+@@ -74,6 +76,8 @@
   */
  if (hasRequest('filter_set')) {
  	CProfile::update('web.latest.filter.select', getRequest('select', ''), PROFILE_TYPE_STR);
@@ -38,7 +38,7 @@ Date:   Sat Mar 26 23:42:30 2016 +0100
  	CProfile::update('web.latest.filter.show_without_data', getRequest('show_without_data', 0), PROFILE_TYPE_INT);
  	CProfile::update('web.latest.filter.show_details', getRequest('show_details', 0), PROFILE_TYPE_INT);
  	CProfile::update('web.latest.filter.application', getRequest('application', ''), PROFILE_TYPE_STR);
-@@ -82,6 +86,8 @@
+@@ -83,6 +87,8 @@
  elseif (hasRequest('filter_rst')) {
  	DBStart();
  	CProfile::delete('web.latest.filter.select');
@@ -47,7 +47,7 @@ Date:   Sat Mar 26 23:42:30 2016 +0100
  	CProfile::delete('web.latest.filter.show_without_data');
  	CProfile::delete('web.latest.filter.show_details');
  	CProfile::delete('web.latest.filter.application');
-@@ -92,6 +98,8 @@
+@@ -93,6 +99,8 @@
 
  $filter = [
  	'select' => CProfile::get('web.latest.filter.select', ''),
@@ -56,7 +56,7 @@ Date:   Sat Mar 26 23:42:30 2016 +0100
  	'showWithoutData' => CProfile::get('web.latest.filter.show_without_data', 1),
  	'showDetails' => CProfile::get('web.latest.filter.show_details'),
  	'application' => CProfile::get('web.latest.filter.application', ''),
-@@ -361,6 +369,15 @@
+@@ -363,6 +371,15 @@
  			)
  	]);
 
@@ -72,7 +72,7 @@ Date:   Sat Mar 26 23:42:30 2016 +0100
  $filterColumn2 = (new CFormList())
  	->addRow(_('Name'), (new CTextBox('select', $filter['select']))->setWidth(ZBX_TEXTAREA_FILTER_STANDARD_WIDTH))
  	->addRow(_('Show items without data'),
-@@ -461,6 +469,31 @@
+@@ -517,6 +534,31 @@
  		$lastValue = UNKNOWN_VALUE;
  	}
 
@@ -104,7 +104,7 @@ Date:   Sat Mar 26 23:42:30 2016 +0100
  	// change
  	$digits = ($item['value_type'] == ITEM_VALUE_TYPE_FLOAT) ? 2 : 0;
  	if ($lastHistory && $prevHistory
-@@ -566,6 +599,9 @@
+@@ -606,6 +648,9 @@
  			$applications[$applicationId]['item_cnt']++;
  			// objects may have different properties, so it's better to use a copy of it
  			$tab_rows[$applicationId][] = clone $row;
@@ -114,7 +114,7 @@ Date:   Sat Mar 26 23:42:30 2016 +0100
  		}
  	}
 
-@@ -637,6 +673,32 @@
+@@ -677,6 +722,32 @@
  		$lastValue = UNKNOWN_VALUE;
  	}
 
@@ -147,7 +147,7 @@ Date:   Sat Mar 26 23:42:30 2016 +0100
  	// column "change"
  	$digits = ($item['value_type'] == ITEM_VALUE_TYPE_FLOAT) ? 2 : 0;
  	if (isset($lastHistory['value']) && isset($prevHistory['value'])
-@@ -750,30 +821,31 @@
+@@ -772,30 +843,31 @@
 
  	$open_state = CProfile::get('web.latest.toggle_other', null, $host['hostid']);
 
