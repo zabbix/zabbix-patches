@@ -1,7 +1,7 @@
-Last-Update: 2017-01-24
+Last-Update: 2017-09-08
 Forwarded: not-needed
 Author: Dmitry Verhoturov <paskal.07@gmail.com>
-Description: Adds ability for zabbix-sender send values to two servers at same time
+Description: Add ability for zabbix-sender send values to two servers at same time
 
 --- a/src/zabbix_sender/zabbix_sender.c
 +++ b/src/zabbix_sender/zabbix_sender.c
@@ -126,7 +126,7 @@ Description: Adds ability for zabbix-sender send values to two servers at same t
 +					if (SUCCEED == (tcp_ret = zbx_tcp_recv(&sock)))
 +					{
 +						zabbix_log(LOG_LEVEL_DEBUG, "secondary answer [%s]", sock.buffer);
-+						if (NULL == sock.buffer || FAIL == (ret = check_response(sock.buffer)))
++						if (NULL == sock.buffer || FAIL == check_response(sock.buffer))
 +							zabbix_log(LOG_LEVEL_WARNING, "incorrect answer from secondary server [%s]", sock.buffer);
 +					}
 +				}
