@@ -8,7 +8,8 @@ command -v dialog > /dev/null 2>&1 || { echo >&2 "This script requires 'dialog'.
 
 [[ "$@" ]] || {
     echo "Usage:
-$0 zabbix_version target_directory
+$0 zabbix_version <target_directory>
+default target_directory is /usr/share/zabbix
 
 Example:
 $0 3.2 /path/to/frontend"
@@ -16,7 +17,11 @@ $0 3.2 /path/to/frontend"
 }
 
 zabbix_major_version=$1
-target_dir=$2
+if [ -z "$2" ]; then
+    target_dir="/usr/share/zabbix"
+else
+    target_dir=$2
+fi
 
 [[ -d $target_dir ]] || {
     echo "target directory \"$target_dir\" does not exist"
