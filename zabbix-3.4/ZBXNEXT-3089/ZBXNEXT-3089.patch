@@ -114,11 +114,11 @@ Description: Adds support of PK(itemid,clock) for history, history_uint tables
 +			if(1 == isPK){
 +				zbx_strcpy_alloc(&sql, &sql_alloc, &sql_offset, " ON DUPLICATE KEY UPDATE value=VALUES(value);\n");
 +			}else{
- 			zbx_strcpy_alloc(&sql, &sql_alloc, &sql_offset, ";\n");
-+#		else
-+			zbx_strcpy_alloc(&sql, &sql_alloc, &sql_offset, ";\n");
++				zbx_strcpy_alloc(&sql, &sql_alloc, &sql_offset, ";\n");
 +			}
-+#	endif
++#		else
+ 			zbx_strcpy_alloc(&sql, &sql_alloc, &sql_offset, ";\n");
++#		endif
  		}
  #	endif
 +
