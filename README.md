@@ -13,6 +13,8 @@ cd zabbix-patches
 
 ## Available patches
 
+Please, vote for ZBXNEXT you're using or just care about - that could help to solve them \ move these patches to upstream.
+
 ### Zabbix 2.4
 
 [ZBXNEXT-543](https://support.zabbix.com/browse/ZBXNEXT-543): Adds an option to clear items and triggers while using hosts and templates window on template page.
