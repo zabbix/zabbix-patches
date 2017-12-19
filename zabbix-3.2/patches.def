@@ -33,5 +33,9 @@ id|type|details
 7|ltr|3
 
 8|name|ZBXNEXT-3089
-8|desc|Adds support of PK(itemid,clock) for history, history_uint tables. Exact version: Zabbix v3.2.4
+8|desc|Adds support of PK(itemid,clock) for history, history_uint tables
 8|ltr|1
+
+9|name|ZBX-12251
+9|desc|Fix cached trigger state not being recalculated in case of problem during original state change
+9|ltr|1

@@ -1,0 +1,319 @@
+Index: include/db.h
+===================================================================
+--- include/db.h	(revision 75998)
++++ include/db.h	(revision 76021)
+@@ -430,7 +430,7 @@
+ DB_ROW		DBfetch(DB_RESULT result);
+ int		DBis_null(const char *field);
+ void		DBbegin(void);
+-void		DBcommit(void);
++int		DBcommit(void);
+ void		DBrollback(void);
+ void		DBend(int ret);
+
+Index: include/zbxdb.h
+===================================================================
+--- include/zbxdb.h	(revision 75998)
++++ include/zbxdb.h	(revision 76021)
+@@ -73,6 +73,7 @@
+ int	zbx_db_rollback(void);
+ int	zbx_db_txn_level(void);
+ int	zbx_db_txn_error(void);
++int	zbx_db_txn_end_error(void);
+
+ #ifdef HAVE_ORACLE
+
+Index: src/libs/zbxdbcache/dbcache.c
+===================================================================
+--- src/libs/zbxdbcache/dbcache.c	(revision 75998)
++++ src/libs/zbxdbcache/dbcache.c	(revision 76021)
+@@ -2283,11 +2283,11 @@
+ 			/*   DCmass_update_items() */
+ 			/*   DCmass_update_triggers() */
+ 			if (0 != process_trigger_events(&trigger_diff, &triggerids, ZBX_EVENTS_PROCESS_CORRELATION))
+-			{
+-				DCconfig_triggers_apply_changes(&trigger_diff);
+ 				zbx_save_trigger_changes(&trigger_diff);
+-			}
+
++			if (ZBX_DB_OK == DBcommit())
++				DCconfig_triggers_apply_changes(&trigger_diff);
++
+ 			zbx_vector_ptr_clear_ext(&trigger_diff, (zbx_clean_func_t)zbx_trigger_diff_free);
+ 		}
+ 		else
+@@ -2294,10 +2294,9 @@
+ 		{
+ 			DCmass_proxy_add_history(history, history_num);
+ 			DCmass_proxy_update_items(history, history_num);
++			DBcommit();
+ 		}
+
+-		DBcommit();
+-
+ 		if (0 != (program_type & ZBX_PROGRAM_TYPE_SERVER))
+ 			DCconfig_unlock_triggers(&triggerids);
+
+Index: src/libs/zbxdbhigh/db.c
+===================================================================
+--- src/libs/zbxdbhigh/db.c	(revision 75998)
++++ src/libs/zbxdbhigh/db.c	(revision 76021)
+@@ -168,9 +168,11 @@
+  * Comments: do nothing if DB does not support transactions                   *
+  *                                                                            *
+  ******************************************************************************/
+-void	DBcommit(void)
++int	DBcommit(void)
+ {
+ 	DBtxn_operation(zbx_db_commit);
++
++	return zbx_db_txn_end_error();
+ }
+
+ /******************************************************************************
+Index: src/libs/zbxdb/db.c
+===================================================================
+--- src/libs/zbxdb/db.c	(revision 75998)
++++ src/libs/zbxdb/db.c	(revision 76021)
+@@ -74,7 +74,8 @@
+ };
+
+ static int	txn_level = 0;	/* transaction level, nested transactions are not supported */
+-static int	txn_error = 0;	/* failed transaction */
++static int	txn_error = ZBX_DB_OK;	/* failed transaction */
++static int	txn_end_error = ZBX_DB_OK;	/* transaction result */
+
+ extern int	CONFIG_LOG_SLOW_QUERIES;
+
+@@ -258,11 +259,23 @@
+ 		case ER_ILLEGAL_GRANT_FOR_TABLE:	/* user without any privileges */
+ 		case ER_TABLEACCESS_DENIED_ERROR:	/* user without some privilege */
+ 		case ER_UNKNOWN_ERROR:
++		case ER_LOCK_DEADLOCK:
+ 			return SUCCEED;
+ 	}
+
+ 	return FAIL;
+ }
++#elif defined(HAVE_POSTGRESQL)
++static int	is_recoverable_postgresql_error(const PGconn *conn, const PGresult *pg_result)
++{
++	if (CONNECTION_OK != PQstatus(conn))
++		return SUCCEED;
++
++	if (0 == zbx_strcmp_null(PQresultErrorField(pg_result, PG_DIAG_SQLSTATE), "40P01"))
++		return SUCCEED;
++
++	return FAIL;
++}
+ #endif
+
+ /******************************************************************************
+@@ -297,12 +310,12 @@
+
+ 	/* Allow executing statements during a connection initialization. Make sure to mark transaction as failed. */
+ 	if (0 != txn_level)
+-		txn_error = 1;
++		txn_error = ZBX_DB_DOWN;
+
+ 	last_txn_error = txn_error;
+ 	last_txn_level = txn_level;
+
+-	txn_error = 0;
++	txn_error = ZBX_DB_OK;
+ 	txn_level = 0;
+
+ #if defined(HAVE_IBM_DB2)
+@@ -407,11 +420,11 @@
+ 	/* set to prior to the connection. MySQL allows changing connection	*/
+ 	/* options on an open connection, so setting it here is safe.		*/
+
+-	if (0 != mysql_options(conn, MYSQL_OPT_RECONNECT, &mysql_reconnect))
++	if (ZBX_DB_OK == ret && 0 != mysql_options(conn, MYSQL_OPT_RECONNECT, &mysql_reconnect))
+ 		zabbix_log(LOG_LEVEL_WARNING, "Cannot set MySQL reconnect option.");
+
+ 	/* in contrast to "set names utf8" results of this call will survive auto-reconnects */
+-	if (0 != mysql_set_character_set(conn, "utf8"))
++	if (ZBX_DB_OK == ret && 0 != mysql_set_character_set(conn, "utf8"))
+ 		zabbix_log(LOG_LEVEL_WARNING, "cannot set MySQL character set to \"utf8\"");
+
+ 	if (ZBX_DB_OK == ret && 0 != mysql_autocommit(conn, 1))
+@@ -838,7 +851,7 @@
+ 		assert(0);
+ 	}
+
+-	if (1 == txn_error)
++	if (ZBX_DB_OK != txn_error)
+ 		goto rollback;
+
+ #if defined(HAVE_IBM_DB2)
+@@ -873,7 +886,10 @@
+ #endif
+
+ 	if (ZBX_DB_DOWN != rc)	/* ZBX_DB_OK or number of changes */
++	{
+ 		txn_level--;
++		txn_end_error = ZBX_DB_OK;
++	}
+
+ 	return rc;
+ }
+@@ -904,7 +920,7 @@
+ 	last_txn_error = txn_error;
+
+ 	/* allow rollback of failed transaction */
+-	txn_error = 0;
++	txn_error = ZBX_DB_OK;
+
+ #if defined(HAVE_IBM_DB2)
+
+@@ -934,7 +950,19 @@
+ #endif
+
+ 	if (ZBX_DB_DOWN != rc)	/* ZBX_DB_FAIL or ZBX_DB_OK or number of changes */
++	{
+ 		txn_level--;
++
++		if (ZBX_DB_FAIL == rc)
++		{
++			zabbix_log(LOG_LEVEL_WARNING, "cannot perform rollback");
++			txn_end_error = ZBX_DB_FAIL;
++		}
++		else
++			txn_end_error = last_txn_error;	/* error that caused rollback */
++
++		txn_error = ZBX_DB_OK;
++	}
+ 	else
+ 		txn_error = last_txn_error;	/* in case of DB down we will repeat this operation */
+
+@@ -951,6 +979,11 @@
+ 	return txn_error;
+ }
+
++int	zbx_db_txn_end_error(void)
++{
++	return txn_end_error;
++}
++
+ #ifdef HAVE_ORACLE
+ static sword	zbx_oracle_statement_prepare(const char *sql)
+ {
+@@ -983,7 +1016,7 @@
+ 	if (0 == txn_level)
+ 		zabbix_log(LOG_LEVEL_DEBUG, "query without transaction detected");
+
+-	if (1 == txn_error)
++	if (ZBX_DB_OK != txn_error)
+ 	{
+ 		zabbix_log(LOG_LEVEL_DEBUG, "ignoring query [txnlev:%d] within failed transaction", txn_level);
+ 		return ZBX_DB_FAIL;
+@@ -997,7 +1030,7 @@
+ 	if (ZBX_DB_FAIL == ret && 0 < txn_level)
+ 	{
+ 		zabbix_log(LOG_LEVEL_DEBUG, "query [%s] failed, setting transaction as failed", sql);
+-		txn_error = 1;
++		txn_error = ZBX_DB_FAIL;
+ 	}
+
+ 	return ret;
+@@ -1146,7 +1179,7 @@
+ 		if (ZBX_DB_FAIL == ret && 0 < txn_level)
+ 		{
+ 			zabbix_log(LOG_LEVEL_DEBUG, "query failed, setting transaction as failed");
+-			txn_error = 1;
++			txn_error = ZBX_DB_FAIL;
+ 		}
+
+ 		goto out;
+@@ -1161,7 +1194,7 @@
+ 		if (ZBX_DB_FAIL == ret && 0 < txn_level)
+ 		{
+ 			zabbix_log(LOG_LEVEL_DEBUG, "query failed, setting transaction as failed");
+-			txn_error = 1;
++			txn_error = ZBX_DB_FAIL;
+ 		}
+
+ 		goto out;
+@@ -1186,7 +1219,7 @@
+ 	ub4	nrows;
+ 	int	ret;
+
+-	if (1 == txn_error)
++	if (ZBX_DB_OK != txn_error)
+ 	{
+ 		zabbix_log(LOG_LEVEL_DEBUG, "ignoring query [txnlev:%d] within failed transaction", txn_level);
+ 		ret = ZBX_DB_FAIL;
+@@ -1201,7 +1234,7 @@
+ 	if (ZBX_DB_FAIL == ret && 0 < txn_level)
+ 	{
+ 		zabbix_log(LOG_LEVEL_DEBUG, "query failed, setting transaction as failed");
+-		txn_error = 1;
++		txn_error = ZBX_DB_FAIL;
+ 	}
+ out:
+ 	zabbix_log(LOG_LEVEL_DEBUG, "%s():%d", __function_name, ret);
+@@ -1250,7 +1283,7 @@
+ 	if (0 == txn_level)
+ 		zabbix_log(LOG_LEVEL_DEBUG, "query without transaction detected");
+
+-	if (1 == txn_error)
++	if (ZBX_DB_OK != txn_error)
+ 	{
+ 		zabbix_log(LOG_LEVEL_DEBUG, "ignoring query [txnlev:%d] [%s] within failed transaction", txn_level, sql);
+ 		ret = ZBX_DB_FAIL;
+@@ -1362,7 +1395,7 @@
+ 		zabbix_errlog(ERR_Z3005, 0, error, sql);
+ 		zbx_free(error);
+
+-		ret = (CONNECTION_OK == PQstatus(conn) ? ZBX_DB_FAIL : ZBX_DB_DOWN);
++		ret = (SUCCEED == is_recoverable_postgresql_error(conn, result) ? ZBX_DB_DOWN : ZBX_DB_FAIL);
+ 	}
+
+ 	if (ZBX_DB_OK == ret)
+@@ -1415,7 +1448,7 @@
+ 	if (ZBX_DB_FAIL == ret && 0 < txn_level)
+ 	{
+ 		zabbix_log(LOG_LEVEL_DEBUG, "query [%s] failed, setting transaction as failed", sql);
+-		txn_error = 1;
++		txn_error = ZBX_DB_FAIL;
+ 	}
+ clean:
+ 	zbx_free(sql);
+@@ -1455,7 +1488,7 @@
+
+ 	sql = zbx_dvsprintf(sql, fmt, args);
+
+-	if (1 == txn_error)
++	if (ZBX_DB_OK != txn_error)
+ 	{
+ 		zabbix_log(LOG_LEVEL_DEBUG, "ignoring query [txnlev:%d] [%s] within failed transaction", txn_level, sql);
+ 		goto clean;
+@@ -1706,8 +1739,16 @@
+ 		zabbix_errlog(ERR_Z3005, 0, error, sql);
+ 		zbx_free(error);
+
+-		DBfree_result(result);
+-		result = (CONNECTION_OK == PQstatus(conn) ? NULL : (DB_RESULT)ZBX_DB_DOWN);
++		if (SUCCEED == is_recoverable_postgresql_error(conn, result->pg_result))
++		{
++			DBfree_result(result);
++			result = (DB_RESULT)ZBX_DB_DOWN;
++		}
++		else
++		{
++			DBfree_result(result);
++			result = NULL;
++		}
+ 	}
+ 	else	/* init rownum */
+ 		result->row_num = PQntuples(result->pg_result);
+@@ -1757,7 +1798,7 @@
+ 	if (NULL == result && 0 < txn_level)
+ 	{
+ 		zabbix_log(LOG_LEVEL_DEBUG, "query [%s] failed, setting transaction as failed", sql);
+-		txn_error = 1;
++		txn_error = ZBX_DB_FAIL;
+ 	}
+ clean:
+ 	zbx_free(sql);
