@@ -1,7 +1,5 @@
-Index: include/db.h
-===================================================================
---- include/db.h	(revision 75998)
-+++ include/db.h	(revision 76021)
+--- a/include/db.h
++++ b/include/db.h
 @@ -430,7 +430,7 @@
  DB_ROW		DBfetch(DB_RESULT result);
  int		DBis_null(const char *field);
@@ -11,10 +9,8 @@ Index: include/db.h
  void		DBrollback(void);
  void		DBend(int ret);
 
-Index: include/zbxdb.h
-===================================================================
---- include/zbxdb.h	(revision 75998)
-+++ include/zbxdb.h	(revision 76021)
+--- a/include/zbxdb.h
++++ b/include/zbxdb.h
 @@ -73,6 +73,7 @@
  int	zbx_db_rollback(void);
  int	zbx_db_txn_level(void);
@@ -23,10 +19,8 @@ Index: include/zbxdb.h
 
  #ifdef HAVE_ORACLE
 
-Index: src/libs/zbxdbcache/dbcache.c
-===================================================================
---- src/libs/zbxdbcache/dbcache.c	(revision 75998)
-+++ src/libs/zbxdbcache/dbcache.c	(revision 76021)
+--- a/src/libs/zbxdbcache/dbcache.c
++++ b/src/libs/zbxdbcache/dbcache.c
 @@ -2283,11 +2283,11 @@
  			/*   DCmass_update_items() */
  			/*   DCmass_update_triggers() */
@@ -54,10 +48,8 @@ Index: src/libs/zbxdbcache/dbcache.c
  		if (0 != (program_type & ZBX_PROGRAM_TYPE_SERVER))
  			DCconfig_unlock_triggers(&triggerids);
 
-Index: src/libs/zbxdbhigh/db.c
-===================================================================
---- src/libs/zbxdbhigh/db.c	(revision 75998)
-+++ src/libs/zbxdbhigh/db.c	(revision 76021)
+--- a/src/libs/zbxdbhigh/db.c
++++ b/src/libs/zbxdbhigh/db.c
 @@ -168,9 +168,11 @@
   * Comments: do nothing if DB does not support transactions                   *
   *                                                                            *
@@ -71,10 +63,8 @@ Index: src/libs/zbxdbhigh/db.c
  }
 
  /******************************************************************************
-Index: src/libs/zbxdb/db.c
-===================================================================
---- src/libs/zbxdb/db.c	(revision 75998)
-+++ src/libs/zbxdb/db.c	(revision 76021)
+--- a/src/libs/zbxdb/db.c
++++ b/src/libs/zbxdb/db.c
 @@ -74,7 +74,8 @@
  };
 
