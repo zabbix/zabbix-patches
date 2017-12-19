@@ -63,9 +63,9 @@ Please, vote for ZBXNEXT you're using or just care about - that could help to so
 
 [ZBXNEXT-2819](https://support.zabbix.com/browse/ZBXNEXT-2819): Adds an option to disable showing groups without problems in system status
 
-[ZBX-5470](https://support.zabbix.com/browse/ZBX-5470): Add templateid in "Template cannot be linked to another template" exception
-
 [ZBXNEXT-3089](https://support.zabbix.com/browse/ZBXNEXT-3089): Adds support of PK(itemid,clock) for history, history_uint tables
+
+[ZBX-5470](https://support.zabbix.com/browse/ZBX-5470): Add templateid in "Template cannot be linked to another template" exception
 
 [ZBX-12251](https://support.zabbix.com/browse/ZBXNEXT-12251): Fix cached trigger state not being recalculated in case of problem during original state change
 
@@ -81,6 +81,6 @@ Please, vote for ZBXNEXT you're using or just care about - that could help to so
 
 [ZBXNEXT-2315](https://support.zabbix.com/browse/ZBXNEXT-2315): Include response headers for httptest regex required strings
 
-[ZBX-5470](https://support.zabbix.com/browse/ZBX-5470): Add templateid in "Template cannot be linked to another template" exception
+[ZBXNEXT-3089](https://support.zabbix.com/browse/ZBXNEXT-3089): Adds support of PK(itemid,clock) for history, history_uint tables.
 
-[ZBXNEXT-3089](https://support.zabbix.com/browse/ZBXNEXT-3089): Adds support of PK(itemid,clock) for history, history_uint tables. Exact version: Zabbix v3.2.4
+[ZBX-5470](https://support.zabbix.com/browse/ZBX-5470): Add templateid in "Template cannot be linked to another template" exception
