@@ -67,7 +67,7 @@ Please, vote for ZBXNEXT you're using or just care about - that could help to so
 
 [ZBX-5470](https://support.zabbix.com/browse/ZBX-5470): Add templateid in "Template cannot be linked to another template" exception
 
-[ZBX-12251](https://support.zabbix.com/browse/ZBXNEXT-12251): Fix cached trigger state not being recalculated in case of problem during original state change
+[ZBX-12251](https://support.zabbix.com/browse/ZBX-12251): Fix cached trigger state not being recalculated in case of problem during original state change
 
 ### Zabbix 3.4
 
