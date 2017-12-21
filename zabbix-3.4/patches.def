@@ -19,7 +19,7 @@ id|type|details
 
 5|name|ZBX-5470
 5|f|y
-5|desc|Add templateid in "Template cannot be linked to another template" exception
+5|desc|Add template_id in "Template cannot be linked to another template" exception
 5|ltr|3
 
 6|name|ZBXNEXT-543

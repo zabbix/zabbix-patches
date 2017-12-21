@@ -34,10 +34,10 @@ id|type|details
 
 8|name|ZBX-5470
 8|f|y
-8|desc|Add templateid in "Template cannot be linked to another template" exception
+8|desc|Add template_id in "Template cannot be linked to another template" exception
 8|ltr|3
 
 9|name|ZBXNEXT-2347
 9|f|y
-9|desc|Add posibility to export inventory page data to CSV
+9|desc|Add possibility to export inventory page data to CSV
 9|ltr|3

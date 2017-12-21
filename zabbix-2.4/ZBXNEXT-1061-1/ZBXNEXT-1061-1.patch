@@ -189,7 +189,7 @@ index a6406ad..f66fa08 100644
  
  		case 'reset':
  			return new CIcon(_('Reset'), 'iconreset', 'timeControl.objectReset();');
-+		
++
 +		case 'pinned':
 +			$pinned= $params['pinned'] ? 0 : 1;
 +			if ($pinned) {

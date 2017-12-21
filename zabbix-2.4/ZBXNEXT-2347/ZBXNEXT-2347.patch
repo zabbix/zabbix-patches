@@ -1,7 +1,7 @@
 Last-Update: 2015-12-16
 Forwarded: not-needed
 Author: Ron Jerome, Smolkov Anton, storex
-Description: Add posibility to export inventory page data to CSV.
+Description: Add possibility to export inventory page data to CSV.
 
 --- a/frontends/php/hostinventories.php
 +++ b/frontends/php/hostinventories.php
@@ -21,7 +21,7 @@ Description: Add posibility to export inventory page data to CSV.
 +               $allInventoryFields[] = $if['db_field'];
 +               $columnheader[] = $if['title'];
 +       }
-+//Add "Host Name" column header 
++//Add "Host Name" column header
 +  array_unshift($columnheader,"Host Name");
 +
 +
@@ -60,18 +60,18 @@ Description: Add posibility to export inventory page data to CSV.
 +				'selectGroups' => API_OUTPUT_EXTEND,
 +				//'groupids' => getRequest('groupid', null)
 +		);
-+		
++
 +		if ($data['pageFilter']->groupid > 0) {
 +			$csvOptions['groupids'] = $data['pageFilter']->groupid;
 +		}
-+		
++
 +		$data['hosts'] = API::Host()->get($csvOptions);
-+		
++
 +		foreach($data['hosts'] as $num => $host) {
 +			// remove host id...
 +		array_shift($host['inventory']);
 +                        //Add "Host Name" to csv export first column
-+                array_unshift($host['inventory'],$host['name']);             
++                array_unshift($host['inventory'],$host['name']);
 +        	$csvRows[] = $host['inventory'];
 +
 +
@@ -88,16 +88,16 @@ Description: Add posibility to export inventory page data to CSV.
 +				}
 +			}
 +		}
-+		
++
 +		print(zbx_toCSV($csvRows));
 +		exit();
 +	}
 +
 +
-+	
++
 +
 +$data['paging'] = getPagingLine($data['hosts'], $sortOrder);
- 
+
  	$hostinventoriesView = new CView('inventory.host.list', $data);
  	$hostinventoriesView->render();
 --- a/frontends/php/include/views/inventory.host.list.php

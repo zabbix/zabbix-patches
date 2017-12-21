@@ -55,11 +55,11 @@ while IFS='|' read patch_id type details; do
     }
 done < <(tail -n +2 zabbix-${zabbix_major_version}/patches.def)
 
-for ((patchid=1; patchid<${#patch_name[@]}+1; patchid++)); do
-    patchlist+=(${patchid} "${patch_name[$patchid]#zabbix-$zabbix_major_version-} ${patch_desc[$patchid]}" off)
+for ((patch_id=1; patch_id<${#patch_name[@]}+1; patch_id++)); do
+    patch_list+=(${patch_id} "${patch_name[$patch_id]#zabbix-$zabbix_major_version-} ${patch_desc[$patch_id]}" off)
 done
 
-patches=$(dialog --stdout --checklist "Choose the patches to apply" 0 0 0 "${patchlist[@]}")
+patches=$(dialog --stdout --checklist "Choose the patches to apply" 0 0 0 "${patch_list[@]}")
 
 [[ ${patches} ]] || {
     echo

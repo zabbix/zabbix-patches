@@ -1,7 +1,7 @@
 Last-Update: 2017-01-24
 Forwarded: not-needed
 Author: Dmitry Verhoturov <paskal.07@gmail.com>
-Description: Add templateid in "Template cannot be linked to another template" exception
+Description: Add template_id in "Template cannot be linked to another template" exception
 
 --- a/frontends/php/include/classes/api/services/CHostBase.php
 +++ b/frontends/php/include/classes/api/services/CHostBase.php

@@ -35,7 +35,7 @@ Description: Adds an option to clear items and triggers while using hosts and te
  			'templated_hosts' => true,
  			'filter' => ['flags' => ZBX_FLAG_DISCOVERY_NORMAL]
  		]);
-+		
++
 +		$hostIds = zbx_objectValues($dbHosts, 'hostid');
 +		$templateHosts = API::Host()->get([
 +			'templateids' => $templateId
@@ -49,7 +49,7 @@ Description: Adds an option to clear items and triggers while using hosts and te
  		else {
  			$template['templateid'] = $templateId;
  			$template['templates_clear'] = $templatesClear;
-+			
++
 +			if (isset($_REQUEST['mass_clear_hosts'])) {
 +				if ($hostsToDelete) {
 +					$hosts = [

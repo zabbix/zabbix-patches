@@ -25,15 +25,15 @@ Please, vote for ZBXNEXT you're using or just care about - that could help to so
 
 [ZBXNEXT-1603](https://support.zabbix.com/browse/ZBXNEXT-1603): Adds support of DB READONLY flag in configuration of frontend
 
-[ZBXNEXT-2347](https://support.zabbix.com/browse/ZBXNEXT-2347): Add posibility to export inventory page data to CSV
+[ZBXNEXT-2347](https://support.zabbix.com/browse/ZBXNEXT-2347): Add possibility to export inventory page data to CSV
 
-[ZBXNEXT-2819](https://support.zabbix.com/browse/ZBXNEXT-2819): Adds an option to disable showing groups without problems in host and system status
+[ZBXNEXT-2819](https://support.zabbix.com/browse/ZBXNEXT-2819): Adds an option to disable showing groups without problems in host and system status (fixed since 3.4)
 
 ### Zabbix 3.0
 
 [ZBXNEXT-1109](https://support.zabbix.com/browse/ZBXNEXT-1109): Adds ability for zabbix-sender send values to two servers at same time
 
-[ZBXNEXT-1456](https://support.zabbix.com/browse/ZBXNEXT-1456): Filter discovered items on items list page
+[ZBXNEXT-1456](https://support.zabbix.com/browse/ZBXNEXT-1456): Filter discovered items on items list page (fixed since 4.0)
 
 [ZBXNEXT-1603](https://support.zabbix.com/browse/ZBXNEXT-1603): Adds support of DB READONLY flag in configuration of frontend
 
@@ -41,13 +41,13 @@ Please, vote for ZBXNEXT you're using or just care about - that could help to so
 
 [ZBXNEXT-2315](https://support.zabbix.com/browse/ZBXNEXT-2315): Include response headers for httptest regex required strings
 
-[ZBXNEXT-2347](https://support.zabbix.com/browse/ZBXNEXT-2347): Add posibility to export inventory page data to CSV
+[ZBXNEXT-2347](https://support.zabbix.com/browse/ZBXNEXT-2347): Add possibility to export inventory page data to CSV
 
 [ZBXNEXT-2448](https://support.zabbix.com/browse/ZBXNEXT-2448): Do not truncate ITEM.VALUE and ITEM.LASTVALUE after 20 characters in the frontend
 
-[ZBXNEXT-2819](https://support.zabbix.com/browse/ZBXNEXT-2819): Adds an option to disable showing groups without problems in system status
+[ZBXNEXT-2819](https://support.zabbix.com/browse/ZBXNEXT-2819): Adds an option to disable showing groups without problems in system status (fixed since 3.4)
 
-[ZBX-5470](https://support.zabbix.com/browse/ZBX-5470): Add templateid in "Template cannot be linked to another template" exception
+[ZBX-5470](https://support.zabbix.com/browse/ZBX-5470): Add template_id in "Template cannot be linked to another template" exception
 
 ### Zabbix 3.2
 
@@ -55,19 +55,19 @@ Please, vote for ZBXNEXT you're using or just care about - that could help to so
 
 [ZBXNEXT-1109](https://support.zabbix.com/browse/ZBXNEXT-1109): Adds ability for zabbix-sender send values to two servers at same time
 
-[ZBXNEXT-1456](https://support.zabbix.com/browse/ZBXNEXT-1456): Filter discovered items on items list page
+[ZBXNEXT-1456](https://support.zabbix.com/browse/ZBXNEXT-1456): Filter discovered items on items list page (fixed since 4.0)
 
 [ZBXNEXT-1810](https://support.zabbix.com/browse/ZBXNEXT-1810): Filter latest data by item value (regex and substring)
 
 [ZBXNEXT-2315](https://support.zabbix.com/browse/ZBXNEXT-2315): Include response headers for httptest regex required strings
 
-[ZBXNEXT-2819](https://support.zabbix.com/browse/ZBXNEXT-2819): Adds an option to disable showing groups without problems in system status
+[ZBXNEXT-2819](https://support.zabbix.com/browse/ZBXNEXT-2819): Adds an option to disable showing groups without problems in system status (fixed since 3.4)
 
 [ZBXNEXT-3089](https://support.zabbix.com/browse/ZBXNEXT-3089): Adds support of PK(itemid,clock) for history, history_uint tables
 
-[ZBX-5470](https://support.zabbix.com/browse/ZBX-5470): Add templateid in "Template cannot be linked to another template" exception
+[ZBX-5470](https://support.zabbix.com/browse/ZBX-5470): Add template_id in "Template cannot be linked to another template" exception
 
-[ZBX-12251](https://support.zabbix.com/browse/ZBX-12251): Fix cached trigger state not being recalculated in case of problem during original state change
+[ZBX-12251](https://support.zabbix.com/browse/ZBX-12251): Fix cached trigger state not being recalculated in case of problem during original state change (fixed since 4.0)
 
 ### Zabbix 3.4
 
@@ -75,7 +75,7 @@ Please, vote for ZBXNEXT you're using or just care about - that could help to so
 
 [ZBXNEXT-1109](https://support.zabbix.com/browse/ZBXNEXT-1109): Adds ability for zabbix-sender send values to two servers at same time
 
-[ZBXNEXT-1456](https://support.zabbix.com/browse/ZBXNEXT-1456): Filter discovered items on items list page
+[ZBXNEXT-1456](https://support.zabbix.com/browse/ZBXNEXT-1456): Filter discovered items on items list page (fixed since 4.0)
 
 [ZBXNEXT-1810](https://support.zabbix.com/browse/ZBXNEXT-1810): Filter latest data by item value (regex and substring)
 
@@ -83,4 +83,4 @@ Please, vote for ZBXNEXT you're using or just care about - that could help to so
 
 [ZBXNEXT-3089](https://support.zabbix.com/browse/ZBXNEXT-3089): Adds support of PK(itemid,clock) for history, history_uint tables.
 
-[ZBX-5470](https://support.zabbix.com/browse/ZBX-5470): Add templateid in "Template cannot be linked to another template" exception
+[ZBX-5470](https://support.zabbix.com/browse/ZBX-5470): Add template_id in "Template cannot be linked to another template" exception
