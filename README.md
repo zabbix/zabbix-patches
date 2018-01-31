@@ -57,8 +57,6 @@ Please, vote for ZBXNEXT you're using or just care about - that could help to so
 
 [ZBXNEXT-1456](https://support.zabbix.com/browse/ZBXNEXT-1456): Filter discovered items on items list page (fixed since **4.0**)
 
-[ZBXNEXT-1810](https://support.zabbix.com/browse/ZBXNEXT-1810): Filter latest data by item value (regex and substring)
-
 [ZBXNEXT-2315](https://support.zabbix.com/browse/ZBXNEXT-2315): Include response headers for httptest regex required strings
 
 [ZBXNEXT-2819](https://support.zabbix.com/browse/ZBXNEXT-2819): Adds an option to disable showing groups without problems in system status (fixed since **3.4**)
@@ -76,8 +74,6 @@ Please, vote for ZBXNEXT you're using or just care about - that could help to so
 [ZBXNEXT-1109](https://support.zabbix.com/browse/ZBXNEXT-1109): Adds ability for zabbix-sender send values to two servers at same time
 
 [ZBXNEXT-1456](https://support.zabbix.com/browse/ZBXNEXT-1456): Filter discovered items on items list page (fixed since **4.0**)
-
-[ZBXNEXT-1810](https://support.zabbix.com/browse/ZBXNEXT-1810): Filter latest data by item value (regex and substring)
 
 [ZBXNEXT-2315](https://support.zabbix.com/browse/ZBXNEXT-2315): Include response headers for httptest regex required strings
 

@@ -4,29 +4,24 @@ id|type|details
 1|desc|Filter discovered items on items list page
 1|ltr|1
 
-2|name|ZBXNEXT-1810-1
-2|f|y
-2|desc|Filter latest data by item value (regex and substring)
+2|name|ZBXNEXT-2315-1
+2|desc|Include response headers for httptest regex required strings
 2|ltr|1
 
-3|name|ZBXNEXT-2315-1
-3|desc|Include response headers for httptest regex required strings
+3|name|ZBXNEXT-1109
+3|desc|Adds ability for zabbix-sender send values to two servers at same time
 3|ltr|1
 
-4|name|ZBXNEXT-1109
-4|desc|Adds ability for zabbix-sender send values to two servers at same time
-4|ltr|1
+4|name|ZBX-5470
+4|f|y
+4|desc|Add template_id in "Template cannot be linked to another template" exception
+4|ltr|3
 
-5|name|ZBX-5470
+5|name|ZBXNEXT-543
 5|f|y
-5|desc|Add template_id in "Template cannot be linked to another template" exception
+5|desc|Adds an option to clear items and triggers while using hosts and templates window on template page
 5|ltr|3
 
-6|name|ZBXNEXT-543
-6|f|y
-6|desc|Adds an option to clear items and triggers while using hosts and templates window on template page
-6|ltr|3
-
-7|name|ZBXNEXT-3089
-7|desc|Adds support of PK(itemid,clock) for history, history_uint tables. Exact version: Zabbix v3.2.4
-7|ltr|1
+6|name|ZBXNEXT-3089
+6|desc|Adds support of PK(itemid,clock) for history, history_uint tables. Exact version: Zabbix v3.2.4
+6|ltr|1
