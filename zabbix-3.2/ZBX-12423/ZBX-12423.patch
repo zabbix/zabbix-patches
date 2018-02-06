@@ -3,23 +3,23 @@ Forwarded: not-needed
 Author: Areg Vrtanesyan (vrtareg@gmail.com)
 Description: Improve WEB UI - Show Server Name instead of server in the right corner of UI.
 
---- a/frontends/php/include/blocks.inc.php   2017-05-05 15:50:22.000000000 +0100
-+++ b/frontends/php/include/blocks.inc.php   2017-06-08 06:39:31.000000000 +0100
+--- a/frontends/php/include/blocks.inc.php	2017-07-18 11:41:08.000000000 +0100
++++ b/frontends/php/include/blocks.inc.php	2017-08-14 12:07:03.145780656 +0100
 @@ -487,7 +487,7 @@
  }
  
  function make_status_of_zbx() {
--       global $ZBX_SERVER, $ZBX_SERVER_PORT;
-+       global $ZBX_SERVER, $ZBX_SERVER_NAME, $ZBX_SERVER_PORT;
+-	global $ZBX_SERVER, $ZBX_SERVER_PORT;
++	global $ZBX_SERVER, $ZBX_SERVER_NAME, $ZBX_SERVER_PORT;
  
-        $table = (new CTableInfo())
-                ->setHeader([
+ 	$table = (new CTableInfo())
+ 		->setHeader([
 @@ -502,7 +502,7 @@
-        $table->addRow([
-                _('Zabbix server is running'),
-                (new CSpan($status['zabbix_server']))->addClass($status['zabbix_server'] == _('Yes') ? ZBX_STYLE_GREEN : ZBX_STYLE_RED),
--               isset($ZBX_SERVER, $ZBX_SERVER_PORT) ? $ZBX_SERVER.':'.$ZBX_SERVER_PORT : _('Zabbix server IP or port is not set!')
-+               isset($ZBX_SERVER, $ZBX_SERVER_PORT) ? $ZBX_SERVER_NAME.':'.$ZBX_SERVER_PORT : _('Zabbix server IP or port is not set!')
-        ]);
-        $title = (new CSpan(_('Number of hosts (enabled/disabled/templates)')))->setAttribute('title', 'asdad');
-        $table->addRow([_('Number of hosts (enabled/disabled/templates)'), $status['hosts_count'],
+ 	$table->addRow([
+ 		_('Zabbix server is running'),
+ 		(new CSpan($status['zabbix_server']))->addClass($status['zabbix_server'] == _('Yes') ? ZBX_STYLE_GREEN : ZBX_STYLE_RED),
+-		isset($ZBX_SERVER, $ZBX_SERVER_PORT) ? $ZBX_SERVER.':'.$ZBX_SERVER_PORT : _('Zabbix server IP or port is not set!')
++		isset($ZBX_SERVER, $ZBX_SERVER_PORT) ? $ZBX_SERVER_NAME.':'.$ZBX_SERVER_PORT : _('Zabbix server IP or port is not set!')
+ 	]);
+ 	$title = (new CSpan(_('Number of hosts (enabled/disabled/templates)')))->setAttribute('title', 'asdad');
+ 	$table->addRow([_('Number of hosts (enabled/disabled/templates)'), $status['hosts_count'],
