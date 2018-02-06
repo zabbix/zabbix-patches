@@ -25,3 +25,7 @@ id|type|details
 6|name|ZBXNEXT-3089
 6|desc|Adds support of PK(itemid,clock) for history, history_uint tables. Exact version: Zabbix v3.2.4
 6|ltr|1
+
+7|name|ZBX-12423
+7|desc|Improve WEB UI - Show Server Name instead of server in the right corner of UI
+7|ltr|1
