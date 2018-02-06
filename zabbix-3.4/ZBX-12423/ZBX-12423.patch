@@ -9,11 +9,11 @@ Description: Improve WEB UI - Show Server Name instead of server in the right co
  
  function make_status_of_zbx() {
  	if (CWebUser::getType() == USER_TYPE_SUPER_ADMIN) {
--		global $ZBX_SERVER, $ZBX_SERVER_NAME, $ZBX_SERVER_PORT;
-+		global $ZBX_SERVER, $ZBX_SERVER_PORT;
+-		global $ZBX_SERVER, $ZBX_SERVER_PORT;
++		global $ZBX_SERVER, $ZBX_SERVER_NAME, $ZBX_SERVER_PORT;
  
--		$server_details = $ZBX_SERVER_NAME.':'.$ZBX_SERVER_PORT;
-+		$server_details = $ZBX_SERVER.':'.$ZBX_SERVER_PORT;
+-		$server_details = $ZBX_SERVER.':'.$ZBX_SERVER_PORT;
++		$server_details = $ZBX_SERVER_NAME.':'.$ZBX_SERVER_PORT;
  	}
  	else {
  		$server_details = '';
