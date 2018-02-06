@@ -1,0 +1,25 @@
+Last-Update: 2018-02-06
+Forwarded: not-needed
+Author: Areg Vrtanesyan (vrtareg@gmail.com)
+Description: Improve WEB UI - Show Server Name instead of server in the right corner of UI.
+
+--- a/frontends/php/include/blocks.inc.php   2017-05-05 15:50:22.000000000 +0100
++++ a/frontends/php/include/blocks.inc.php   2017-06-08 06:39:31.000000000 +0100
+@@ -455,7 +455,7 @@
+ }
+ 
+ function make_status_of_zbx() {
+-       global $ZBX_SERVER, $ZBX_SERVER_PORT;
++       global $ZBX_SERVER, $ZBX_SERVER_NAME, $ZBX_SERVER_PORT;
+ 
+        $table = (new CTableInfo())
+                ->setHeader([
+@@ -470,7 +470,7 @@
+        $table->addRow([
+                _('Zabbix server is running'),
+                (new CSpan($status['zabbix_server']))->addClass($status['zabbix_server'] == _('Yes') ? ZBX_STYLE_GREEN : ZBX_STYLE_RED),
+-               isset($ZBX_SERVER, $ZBX_SERVER_PORT) ? $ZBX_SERVER.':'.$ZBX_SERVER_PORT : _('Zabbix server IP or port is not set!')
++               isset($ZBX_SERVER, $ZBX_SERVER_PORT) ? $ZBX_SERVER_NAME.':'.$ZBX_SERVER_PORT : _('Zabbix server IP or port is not set!')
+        ]);
+        $title = (new CSpan(_('Number of hosts (enabled/disabled/templates)')))->setAttribute('title', 'asdad');
+        $table->addRow([_('Number of hosts (enabled/disabled/templates)'), $status['hosts_count'],
