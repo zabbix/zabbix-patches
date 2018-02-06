@@ -67,6 +67,8 @@ Please, vote for ZBXNEXT you're using or just care about - that could help to so
 
 [ZBX-12251](https://support.zabbix.com/browse/ZBX-12251): Fix cached trigger state not being recalculated in case of problem during original state change (fixed since **4.0**)
 
+[ZBX-12423](https://support.zabbix.com/browse/ZBX-12423): Improve WEB UI - Show Server Name instead of server in the right corner of UI.
+
 ### Zabbix **3.4**
 
 [ZBXNEXT-543](https://support.zabbix.com/browse/ZBXNEXT-543): Adds an option to clear items and triggers while using hosts and templates window on template page.
@@ -80,3 +82,5 @@ Please, vote for ZBXNEXT you're using or just care about - that could help to so
 [ZBXNEXT-3089](https://support.zabbix.com/browse/ZBXNEXT-3089): Adds support of PK(itemid,clock) for history, history_uint tables.
 
 [ZBX-5470](https://support.zabbix.com/browse/ZBX-5470): Add template_id in "Template cannot be linked to another template" exception
+
+[ZBX-12423](https://support.zabbix.com/browse/ZBX-12423): Improve WEB UI - Show Server Name instead of server in the right corner of UI.
