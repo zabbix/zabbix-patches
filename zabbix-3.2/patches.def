@@ -34,3 +34,7 @@ id|type|details
 8|name|ZBX-12251
 8|desc|Fix cached trigger state not being recalculated in case of problem during original state change
 8|ltr|1
+
+9|name|ZBX-12423
+9|desc|Improve WEB UI - Show Server Name instead of server in the right corner of UI
+9|ltr|1
