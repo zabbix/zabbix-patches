@@ -8,7 +8,7 @@ Community maintained patches for Zabbix
 ```
 git clone https://github.com/zabbix/zabbix-patches.git
 cd zabbix-patches
-./patch-zabbix.sh 3.2 ~/Desktop/zabbix-3.2.5
+./patch-zabbix.sh 4.0 ~/Desktop/zabbix-4.0.0
 ```
 
 ## Available patches
@@ -76,6 +76,18 @@ Please, vote for ZBXNEXT you're using or just care about - that could help to so
 [ZBXNEXT-1109](https://support.zabbix.com/browse/ZBXNEXT-1109): Adds ability for zabbix-sender send values to two servers at same time
 
 [ZBXNEXT-1456](https://support.zabbix.com/browse/ZBXNEXT-1456): Filter discovered items on items list page (fixed since **4.0**)
+
+[ZBXNEXT-2315](https://support.zabbix.com/browse/ZBXNEXT-2315): Include response headers for httptest regex required strings
+
+[ZBXNEXT-3089](https://support.zabbix.com/browse/ZBXNEXT-3089): Adds support of PK(itemid,clock) for history, history_uint tables.
+
+[ZBX-5470](https://support.zabbix.com/browse/ZBX-5470): Add template_id in "Template cannot be linked to another template" exception
+
+[ZBX-12423](https://support.zabbix.com/browse/ZBX-12423): Improve WEB UI - Show Server Name instead of server in the right corner of UI.
+
+### Zabbix **4.0**
+
+[ZBXNEXT-1109](https://support.zabbix.com/browse/ZBXNEXT-1109): Adds ability for zabbix-sender send values to two servers at same time
 
 [ZBXNEXT-2315](https://support.zabbix.com/browse/ZBXNEXT-2315): Include response headers for httptest regex required strings
 
