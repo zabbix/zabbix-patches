@@ -8,7 +8,7 @@ Description: Adds an option to clear items and triggers while using hosts and te
 @@ -158,6 +158,15 @@
  	$cmbGroups
  ]));
- 
+
 +$templatesDiv = new CDiv(array(
 +	    new CCheckBox('mass_clear_hosts', $this->data['mass_clear_hosts']),
 +	    SPACE,
@@ -42,9 +42,9 @@ Description: Adds an option to clear items and triggers while using hosts and te
 +		]);
 +		$templateHostsIds = zbx_objectValues($templateHosts, 'hostid');
 +		$hostsToDelete = array_diff($templateHostsIds, $hostIds);
- 
+
  		$templateName = getRequest('template_name', '');
- 
+
 @@ -252,6 +260,18 @@
  		else {
  			$template['templateid'] = $templateId;
@@ -61,9 +61,9 @@ Description: Adds an option to clear items and triggers while using hosts and te
 +					}
 +				}
 +			}
- 
+
  			$result = API::Template()->update($template);
- 
+
 @@ -437,6 +457,7 @@
  		'form' => getRequest('form'),
  		'groupId' => getRequest('groupid', 0),

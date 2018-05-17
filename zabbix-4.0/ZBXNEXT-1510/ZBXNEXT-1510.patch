@@ -1,0 +1,86 @@
+Last-Update: 2018-05-16
+Forwarded: not-needed
+Author: Dmitry Verhoturov <paskal.07@gmail.com>
+Description: Add information about creator to maintenance description, default 3h maintenance period, merge all maintenance settings to one tab
+
+--- a/frontends/php/maintenance.php
++++ b/frontends/php/maintenance.php
+@@ -444,7 +447,23 @@
+ 			$data['active_till'] = strtotime('tomorrow');
+ 		}
+ 		$data['description'] = getRequest('description', '');
++ 		if ($data['description'] == '') {
++ 			$data['description'] = 'Created by ' . CWebUser::$data['alias'];
++ 		}
+ 		$data['timeperiods'] = getRequest('timeperiods', []);
++ 		// add default timeperiod of 3h
++ 		if (count($data['timeperiods']) == 0) {
++ 			$new_timeperiod = array();
++ 			$new_timeperiod['timeperiod_type'] = TIMEPERIOD_TYPE_ONETIME;
++ 			$new_timeperiod['start_date'] = time()-60;
++ 			$new_timeperiod['start_time'] = 0;
++ 			$new_timeperiod['period'] = (0 * SEC_PER_DAY) + (3 * SEC_PER_HOUR) + (0 * SEC_PER_MIN);
++ 			$new_timeperiod['every'] = 1;
++ 			$new_timeperiod['month'] = 1;
++ 			$new_timeperiod['dayofweek'] = 1;
++ 			$new_timeperiod['day'] = 1;
++ 			$data['timeperiods'] = array($new_timeperiod);
++ 		}
+
+ 		$hostids = getRequest('hostids', []);
+ 		$groupids = getRequest('groupids', []);
+
+--- a/frontends/php/include/views/configuration.maintenance.edit.php
++++ b/frontends/php/include/views/configuration.maintenance.edit.php
+@@ -103,7 +103,7 @@
+ /*
+  * Maintenance period tab
+  */
+-$maintenancePeriodFormList = new CFormList('maintenancePeriodFormList');
++// $maintenancePeriodFormList = new CFormList('maintenancePeriodFormList');
+ $maintenance_period_table = (new CTable())
+ 	->setAttribute('style', 'width: 100%;')
+ 	->setHeader([_('Period type'), _('Schedule'), _('Period'), _('Action')])
+@@ -155,7 +155,8 @@
+ 			->addClass(ZBX_STYLE_BTN_LINK)
+ 	);
+ }
+-$maintenancePeriodFormList->addRow(
++// $maintenancePeriodFormList->addRow(
++$maintenanceFormList->addRow(
+ 	(new CLabel(_('Periods'), $maintenance_period_table->getId()))->setAsteriskMark(), $periodsDiv
+ );
+
+@@ -167,7 +168,8 @@
+ 		$saveLabel = _('Add');
+ 	}
+
+-	$maintenancePeriodFormList->addRow(_('Maintenance period'),
++// 	$maintenancePeriodFormList->addRow(_('Maintenance period'),
++	$maintenanceFormList->addRow(_('Maintenance period'),
+ 		(new CDiv([
+ 			get_timeperiod_form(),
+ 			new CHorList([
+@@ -185,7 +187,8 @@
+ }
+
+ // Hosts and groups tab.
+-$hostsAndGroupsFormList = (new CFormList('hostsAndGroupsFormList'))
++// $hostsAndGroupsFormList = (new CFormList('hostsAndGroupsFormList'))
++$maintenanceFormList
+ 	->addRow('',
+ 		(new CLabel(_('At least one host or host group must be selected.')))->setAsteriskMark()
+ 	)
+@@ -232,9 +235,9 @@
+
+ // Append tabs to form.
+ $maintenanceTab = (new CTabView())
+-	->addTab('maintenanceTab', _('Maintenance'), $maintenanceFormList)
+-	->addTab('periodsTab', _('Periods'), $maintenancePeriodFormList)
+-	->addTab('hostTab', _('Hosts & Groups'), $hostsAndGroupsFormList);
++	->addTab('maintenanceTab', _('Maintenance'), $maintenanceFormList);
++// 	->addTab('periodsTab', _('Periods'), $maintenancePeriodFormList)
++// 	->addTab('hostTab', _('Hosts & Groups'), $hostsAndGroupsFormList);
+ if (!$this->data['form_refresh']) {
+ 	$maintenanceTab->setSelected(0);
+ }

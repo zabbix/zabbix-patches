@@ -63,6 +63,8 @@ Please, vote for ZBXNEXT you're using or just care about - that could help to so
 
 [ZBXNEXT-3089](https://support.zabbix.com/browse/ZBXNEXT-3089): Adds support of PK(itemid,clock) for history, history_uint tables
 
+[ZBX-1510](https://support.zabbix.com/browse/ZBX-1510): Add information about creator to maintenance description, default 3h maintenance period, merge all maintenance settings to one tab
+
 [ZBX-5470](https://support.zabbix.com/browse/ZBX-5470): Add template_id in "Template cannot be linked to another template" exception
 
 [ZBX-12251](https://support.zabbix.com/browse/ZBX-12251): Fix cached trigger state not being recalculated in case of problem during original state change (fixed since **4.0**)
@@ -81,6 +83,8 @@ Please, vote for ZBXNEXT you're using or just care about - that could help to so
 
 [ZBXNEXT-3089](https://support.zabbix.com/browse/ZBXNEXT-3089): Adds support of PK(itemid,clock) for history, history_uint tables.
 
+[ZBX-1510](https://support.zabbix.com/browse/ZBX-1510): Add information about creator to maintenance description, default 3h maintenance period, merge all maintenance settings to one tab
+
 [ZBX-5470](https://support.zabbix.com/browse/ZBX-5470): Add template_id in "Template cannot be linked to another template" exception
 
 [ZBX-12423](https://support.zabbix.com/browse/ZBX-12423): Improve WEB UI - Show Server Name instead of server in the right corner of UI.
@@ -92,6 +96,8 @@ Please, vote for ZBXNEXT you're using or just care about - that could help to so
 [ZBXNEXT-2315](https://support.zabbix.com/browse/ZBXNEXT-2315): Include response headers for httptest regex required strings
 
 [ZBXNEXT-3089](https://support.zabbix.com/browse/ZBXNEXT-3089): Adds support of PK(itemid,clock) for history, history_uint tables.
+
+[ZBX-1510](https://support.zabbix.com/browse/ZBX-1510): Add information about creator to maintenance description, default 3h maintenance period, merge all maintenance settings to one tab
 
 [ZBX-5470](https://support.zabbix.com/browse/ZBX-5470): Add template_id in "Template cannot be linked to another template" exception
 

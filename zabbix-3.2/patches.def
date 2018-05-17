@@ -38,3 +38,8 @@ id|type|details
 9|name|ZBX-12423
 9|desc|Improve WEB UI - Show Server Name instead of server in the right corner of UI
 9|ltr|1
+
+10|name|ZBX-1510
+10|f|y
+10|desc|Add information about creator to maintenance description, default 3h maintenance period, merge all maintenance settings to one tab
+10|ltr|3

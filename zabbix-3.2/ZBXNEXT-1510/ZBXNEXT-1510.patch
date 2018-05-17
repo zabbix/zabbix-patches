@@ -1,0 +1,112 @@
+Last-Update: 2017-04-24
+Forwarded: not-needed
+Author: Dmitry Verhoturov <paskal.07@gmail.com>
+Description: Add information about creator to maintenance description, default 3h maintenance period, merge all maintenance settings to one tab
+
+--- a/frontends/php/maintenance.php
++++ b/frontends/php/maintenance.php
+@@ -450,7 +453,23 @@
+ 			$data['active_till'] = strtotime('tomorrow');
+ 		}
+ 		$data['description'] = getRequest('description', '');
++		if ($data['description'] == '') {
++			$data['description'] = 'Created by ' . CWebUser::$data['alias'];
++		}
+ 		$data['timeperiods'] = getRequest('timeperiods', []);
++		// add default timeperiod of 3h
++		if (count($data['timeperiods']) == 0) {
++			$new_timeperiod = array();
++			$new_timeperiod['timeperiod_type'] = TIMEPERIOD_TYPE_ONETIME;
++			$new_timeperiod['start_date'] = time()-60;
++			$new_timeperiod['start_time'] = 0;
++			$new_timeperiod['period'] = (0 * SEC_PER_DAY) + (3 * SEC_PER_HOUR) + (0 * SEC_PER_MIN);
++			$new_timeperiod['every'] = 1;
++			$new_timeperiod['month'] = 1;
++			$new_timeperiod['dayofweek'] = 1;
++			$new_timeperiod['day'] = 1;
++			$data['timeperiods'] = array($new_timeperiod);
++		}
+ 		$data['hostids'] = getRequest('hostids', []);
+ 		$data['groupids'] = getRequest('groupids', []);
+ 	}
+--- a/frontends/php/include/views/configuration.maintenance.edit.php
++++ b/frontends/php/include/views/configuration.maintenance.edit.php
+@@ -99,7 +99,7 @@
+ /*
+  * Maintenance period tab
+  */
+-$maintenancePeriodFormList = new CFormList('maintenancePeriodFormList');
++// $maintenancePeriodFormList = new CFormList('maintenancePeriodFormList');
+ $maintenancePeriodTable = (new CTable())
+ 	->setAttribute('style', 'width: 100%;')
+ 	->setHeader([_('Period type'), _('Schedule'), _('Period'), _('Action')]);
+@@ -148,7 +148,8 @@
+ 			->addClass(ZBX_STYLE_BTN_LINK)
+ 	);
+ }
+-$maintenancePeriodFormList->addRow(_('Periods'), $periodsDiv);
++// $maintenancePeriodFormList->addRow(_('Periods'), $periodsDiv);
++$maintenanceFormList->addRow(_('Periods'), $periodsDiv);
+
+ if (isset($_REQUEST['new_timeperiod'])) {
+ 	if (is_array($_REQUEST['new_timeperiod']) && isset($_REQUEST['new_timeperiod']['id'])) {
+@@ -158,7 +159,8 @@
+ 		$saveLabel = _('Add');
+ 	}
+
+-	$maintenancePeriodFormList->addRow(_('Maintenance period'),
++	// $maintenancePeriodFormList->addRow(_('Maintenance period'),
++	$maintenanceFormList->addRow(_('Maintenance period'),
+ 		(new CDiv([
+ 			get_timeperiod_form(),
+ 			new CHorList([
+@@ -178,7 +180,7 @@
+ /*
+  * Hosts & groups tab
+  */
+-$hostsAndGroupsFormList = new CFormList('hostsAndGroupsFormList');
++// $hostsAndGroupsFormList = new CFormList('hostsAndGroupsFormList');
+ $hostTweenBox = new CTweenBox($maintenanceForm, 'hostids', $this->data['hostids'], 10);
+ foreach ($this->data['hosts'] as $host) {
+ 	$hostTweenBox->addItem($host['hostid'], $host['name']);
+@@ -189,7 +191,8 @@
+ }
+ $hostTable = (new CTable())
+ 	->addRow($hostTweenBox->get(_('In maintenance'), [_('Other hosts | Group').SPACE, $groupsComboBox]));
+-$hostsAndGroupsFormList->addRow(_('Hosts in maintenance'), $hostTable);
++// $hostsAndGroupsFormList->addRow(_('Hosts in maintenance'), $hostTable);
++$maintenanceFormList->addRow(_('Hosts in maintenance'), $hostTable);
+
+ $groupTable = new CTable();
+ $groupTweenBox = new CTweenBox($maintenanceForm, 'groupids', $this->data['groupids'], 10);
+@@ -198,13 +201,14 @@
+ }
+ $groupTable->addRow($groupTweenBox->get(_('In maintenance'), _('Other groups')));
+
+-$hostsAndGroupsFormList->addRow(_('Groups in maintenance'), $groupTable);
++// $hostsAndGroupsFormList->addRow(_('Groups in maintenance'), $groupTable);
++$maintenanceFormList->addRow(_('Groups in maintenance'), $groupTable);
+
+ // append tabs to form
+ $maintenanceTab = (new CTabView())
+-	->addTab('maintenanceTab', _('Maintenance'), $maintenanceFormList)
+-	->addTab('periodsTab', _('Periods'), $maintenancePeriodFormList)
+-	->addTab('hostTab', _('Hosts & Groups'), $hostsAndGroupsFormList);
++	->addTab('maintenanceTab', _('Maintenance'), $maintenanceFormList);
++//	->addTab('periodsTab', _('Periods'), $maintenancePeriodFormList)
++//	->addTab('hostTab', _('Hosts & Groups'), $hostsAndGroupsFormList);
+ if (!$this->data['form_refresh']) {
+ 	$maintenanceTab->setSelected(0);
+ }
+
+--- a/frontends/php/app/views/monitoring.acknowledge.edit.php
++++ b/frontends/php/app/views/monitoring.acknowledge.edit.php
+@@ -22,7 +22,7 @@
+ $this->includeJSfile('app/views/monitoring.acknowledge.edit.js.php');
+
+ $form_list = (new CFormList())
+-	->addRow(_('Message'),
++	->addRow(_('Message, must contain 6 digits of RT ticket number'),
+ 		(new CTextArea('message'))
+ 			->setWidth(ZBX_TEXTAREA_BIG_WIDTH)
+ 			->setMaxLength(255)
