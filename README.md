@@ -63,7 +63,7 @@ Please, vote for ZBXNEXT you're using or just care about - that could help to so
 
 [ZBXNEXT-3089](https://support.zabbix.com/browse/ZBXNEXT-3089): Adds support of PK(itemid,clock) for history, history_uint tables
 
-[ZBX-1510](https://support.zabbix.com/browse/ZBX-1510): Add information about creator to maintenance description, default 3h maintenance period, merge all maintenance settings to one tab
+[ZBXNEXT-1510](https://support.zabbix.com/browse/ZBXNEXT-1510): Add information about creator to maintenance description, default 3h maintenance period, merge all maintenance settings to one tab
 
 [ZBX-5470](https://support.zabbix.com/browse/ZBX-5470): Add template_id in "Template cannot be linked to another template" exception
 
@@ -83,7 +83,7 @@ Please, vote for ZBXNEXT you're using or just care about - that could help to so
 
 [ZBXNEXT-3089](https://support.zabbix.com/browse/ZBXNEXT-3089): Adds support of PK(itemid,clock) for history, history_uint tables.
 
-[ZBX-1510](https://support.zabbix.com/browse/ZBX-1510): Add information about creator to maintenance description, default 3h maintenance period, merge all maintenance settings to one tab
+[ZBXNEXT-1510](https://support.zabbix.com/browse/ZBXNEXT-1510): Add information about creator to maintenance description, default 3h maintenance period, merge all maintenance settings to one tab
 
 [ZBX-5470](https://support.zabbix.com/browse/ZBX-5470): Add template_id in "Template cannot be linked to another template" exception
 
@@ -97,7 +97,7 @@ Please, vote for ZBXNEXT you're using or just care about - that could help to so
 
 [ZBXNEXT-3089](https://support.zabbix.com/browse/ZBXNEXT-3089): Adds support of PK(itemid,clock) for history, history_uint tables.
 
-[ZBX-1510](https://support.zabbix.com/browse/ZBX-1510): Add information about creator to maintenance description, default 3h maintenance period, merge all maintenance settings to one tab
+[ZBXNEXT-1510](https://support.zabbix.com/browse/ZBXNEXT-1510): Add information about creator to maintenance description, default 3h maintenance period, merge all maintenance settings to one tab
 
 [ZBX-5470](https://support.zabbix.com/browse/ZBX-5470): Add template_id in "Template cannot be linked to another template" exception
 

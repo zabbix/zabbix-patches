@@ -20,7 +20,7 @@ id|type|details
 5|desc|Improve WEB UI - Show Server Name instead of server in the right corner of UI
 5|ltr|1
 
-6|name|ZBX-1510
+6|name|ZBXNEXT-1510
 6|f|y
 6|desc|Add information about creator to maintenance description, default 3h maintenance period, merge all maintenance settings to one tab
 6|ltr|3
