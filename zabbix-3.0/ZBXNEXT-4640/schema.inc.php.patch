@@ -1,0 +1,33 @@
+2402a2403,2434
+> 			//*keycloak
+> 			'keycloak_auth_url' => [
+> 				'null' => false,
+> 				'type' => DB::FIELD_TYPE_CHAR,
+> 				'length' => 255,
+> 				'default' => '',
+> 			],
+> 			'keycloak_realm' => [
+> 				'null' => false,
+> 				'type' => DB::FIELD_TYPE_CHAR,
+> 				'length' => 128,
+> 				'default' => '',
+> 			],
+> 			'keycloak_client_id' => [
+> 				'null' => false,
+> 				'type' => DB::FIELD_TYPE_CHAR,
+> 				'length' => 128,
+> 				'default' => '',
+> 			],
+> 			'keycloak_client_secret' => [
+> 				'null' => false,
+> 				'type' => DB::FIELD_TYPE_CHAR,
+> 				'length' => 255,
+> 				'default' => '',
+> 			],
+> 			'keycloak_user_name' => [
+> 				'null' => false,
+> 				'type' => DB::FIELD_TYPE_CHAR,
+> 				'length' => 128,
+> 				'default' => '',
+> 			],
+> 			//keycloak*

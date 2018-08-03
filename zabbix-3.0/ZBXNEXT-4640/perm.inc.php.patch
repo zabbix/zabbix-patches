@@ -1,0 +1,10 @@
+20c20
+< 
+---
+> //support KEYCLOAK
+50c50,52
+< 		ZBX_AUTH_HTTP => _('HTTP authentication')
+---
+> 		ZBX_AUTH_HTTP => _('HTTP authentication'),
+> 		//keycloak
+> 		ZBX_AUTH_KEYCLOAK => _('Keycloak authentication')

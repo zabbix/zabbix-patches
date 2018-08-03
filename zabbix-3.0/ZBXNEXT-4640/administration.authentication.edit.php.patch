@@ -1,0 +1,38 @@
+21d20
+< 
+35a35,36
+> 		//keycloak
+> 		->addValue(_('KEYCLOAK'), ZBX_AUTH_KEYCLOAK, null, 'submit()')
+37a39,49
+> //*keycloak
+> // append KEYCLOAK fields to form list
+> if ($this->data['keycloak_extension_enabled'] && $this->data['config']['authentication_type'] == ZBX_AUTH_KEYCLOAK) {
+> 	$authenticationFormList->addRow(_('Keycloak Auth URL'),(new CTextBox('keycloak_auth_url', $this->data['config']['keycloak_auth_url']))->setWidth(ZBX_TEXTAREA_STANDARD_WIDTH));
+> 	$authenticationFormList->addRow(_('Keycloak Realm'),(new CTextBox('keycloak_realm', $this->data['config']['keycloak_realm']))->setWidth(ZBX_TEXTAREA_SMALL_WIDTH));
+>     $authenticationFormList->addRow(_('Keycloak Client ID'),(new CTextBox('keycloak_client_id', $this->data['config']['keycloak_client_id']))->setWidth(ZBX_TEXTAREA_SMALL_WIDTH));
+>     $authenticationFormList->addRow(_('Keycloak Client Secret'),(new CTextBox('keycloak_client_secret', $this->data['config']['keycloak_client_secret']))->setWidth(ZBX_TEXTAREA_STANDARD_WIDTH));
+>     $authenticationFormList->addRow(_('Keycloak Client Scope'),(new CTextBox('keycloak_client_scope', $this->data['config']['keycloak_client_scope']))->setWidth(ZBX_TEXTAREA_STANDARD_WIDTH));
+> 	// $authenticationFormList->addRow(_('Keycloak User Name'),(new CTextBox('keycloak_user_name', $this->data['config']['keycloak_user_name']))->setWidth(ZBX_TEXTAREA_STANDARD_WIDTH));
+> }
+> //keycloak*
+110c122
+< // create save button
+---
+> // create UPDATE (save) button
+118c130
+< elseif ($this->data['config']['authentication_type'] != ZBX_AUTH_LDAP) {
+---
+> elseif ($this->data['config']['authentication_type'] != ZBX_AUTH_LDAP && $this->data['config']['authentication_type'] != ZBX_AUTH_KEYCLOAK) {
+122c134
+< // LDAP test button.
+---
+> // LDAP and KEYCLOAK test button..
+129,130c141,145
+< }
+< else {
+---
+> }elseif ($data['config']['authentication_type'] == ZBX_AUTH_KEYCLOAK){
+>     $test_button->setEnabled($data['keycloak_extension_enabled']);
+>     $saveButton->setEnabled($data['keycloak_extension_enabled']);
+>     $authenticationTab->setFooter(makeFormFooter($saveButton, [$test_button]));
+> }else {

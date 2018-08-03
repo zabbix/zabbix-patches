@@ -31,6 +31,8 @@ Please, vote for ZBXNEXT you're using or just care about - that could help to so
 
 ### Zabbix 3.0
 
+[ZBXNEXT-4640](https://support.zabbix.com/browse/ZBXNEXT-4640): Zabbix Integrate keycloak require review by zabbix official
+
 [ZBXNEXT-1109](https://support.zabbix.com/browse/ZBXNEXT-1109): Adds ability for zabbix-sender send values to two servers at same time
 
 [ZBXNEXT-1456](https://support.zabbix.com/browse/ZBXNEXT-1456): Filter discovered items on items list page (fixed since **4.0**)

@@ -1,0 +1,299 @@
+21c21
+< 
+---
+> //support KEYCLOAK
+22a23,27
+> require_once dirname(__FILE__).'/vendor/autoload.php';
+> use fkooman\OAuth\Client\Http\CurlHttpClient;
+> use fkooman\OAuth\Client\OAuthClient4zk;
+> use fkooman\OAuth\Client\Provider;
+> use fkooman\OAuth\Client\AccessToken;
+29c34
+< //	VAR						TYPE	OPTIONAL	FLAGS	VALIDATION	EXCEPTION
+---
+> //	VAR						TYPE	OPTIONAL	FLAGS	                   VALIDATION	                                               EXCEPTION
+31,32c36,37
+< 	'config' =>			[T_ZBX_INT, O_OPT, null, IN(ZBX_AUTH_INTERNAL.','.ZBX_AUTH_LDAP.','.ZBX_AUTH_HTTP), null],
+< 	'form_refresh' =>	[T_ZBX_INT, O_OPT, null,			null, null],
+---
+> 	'config' =>			[T_ZBX_INT,   O_OPT,    null, IN(ZBX_AUTH_INTERNAL.','.ZBX_AUTH_LDAP.','.ZBX_AUTH_HTTP.','.ZBX_AUTH_KEYCLOAK), null],
+> 	'form_refresh' =>	[T_ZBX_INT,   O_OPT,    null,			             null,                                                      null],
+34,35c39,40
+< 	'update' =>			[T_ZBX_STR, O_OPT, P_SYS|P_ACT,	null, null],
+< 	'test' =>			[T_ZBX_STR, O_OPT, P_SYS|P_ACT,	null, null],
+---
+> 	'update' =>			[T_ZBX_STR,   O_OPT,  P_SYS|P_ACT,	                 null,                                                      null],
+> 	'test' =>			[T_ZBX_STR,   O_OPT,  P_SYS|P_ACT,	                 null,                                                      null],
+37,52c42,57
+< 	'ldap_host' =>		[T_ZBX_STR, O_OPT, null,			NOT_EMPTY,
+< 		'isset({config}) && {config} == '.ZBX_AUTH_LDAP.' && (isset({update}) || isset({test}))',	_('LDAP host')],
+< 	'ldap_port' =>		[T_ZBX_INT, O_OPT, null,			BETWEEN(0, 65535),
+< 		'isset({config}) && {config} == '.ZBX_AUTH_LDAP.' && (isset({update}) || isset({test}))',	_('Port')],
+< 	'ldap_base_dn' =>	[T_ZBX_STR, O_OPT, null,			NOT_EMPTY,
+< 		'isset({config}) && {config} == '.ZBX_AUTH_LDAP.' && (isset({update}) || isset({test}))',	_('Base DN')],
+< 	'ldap_bind_dn' =>	[T_ZBX_STR, O_OPT, null,			null,
+< 		'isset({config}) && {config} == '.ZBX_AUTH_LDAP.' && (isset({update}) || isset({test}))'],
+< 	'ldap_bind_password' => [T_ZBX_STR, O_OPT, null,		null, null,				_('Bind password')],
+< 	'ldap_search_attribute' => [T_ZBX_STR, O_OPT, null,	NOT_EMPTY,
+< 		'isset({config}) && {config} == '.ZBX_AUTH_LDAP.' && (isset({update}) || isset({test}))',	_('Search attribute')],
+< 	'user' =>			[T_ZBX_STR, O_OPT, null,			NOT_EMPTY,
+< 		'isset({config}) && {config} == '.ZBX_AUTH_LDAP.' && (isset({update}) || isset({test}))'],
+< 	'user_password' =>	[T_ZBX_STR, O_OPT, null,			NOT_EMPTY,
+< 		'isset({config}) && {config} == '.ZBX_AUTH_LDAP.' && (isset({update}) || isset({test}))',	_('User password')],
+< 	'change_bind_password' => [T_ZBX_STR, O_OPT, null, null,	null]
+---
+> 	'ldap_host' =>		[T_ZBX_STR,   O_OPT,    null,			            NOT_EMPTY,         'isset({config}) && {config} == '.ZBX_AUTH_LDAP.' && (isset({update}) || isset({test}))',	_('LDAP host')],
+> 	'ldap_port' =>		[T_ZBX_INT,   O_OPT,    null,			        BETWEEN(0, 65535),     'isset({config}) && {config} == '.ZBX_AUTH_LDAP.' && (isset({update}) || isset({test}))',	_('Port')],
+> 	'ldap_base_dn' =>	[T_ZBX_STR,   O_OPT,    null,			            NOT_EMPTY,         'isset({config}) && {config} == '.ZBX_AUTH_LDAP.' && (isset({update}) || isset({test}))',	_('Base DN')],
+> 	'ldap_bind_dn' =>	[T_ZBX_STR,   O_OPT,    null,			             null,             'isset({config}) && {config} == '.ZBX_AUTH_LDAP.' && (isset({update}) || isset({test}))'],
+> 	'user' =>			[T_ZBX_STR, O_OPT,      null,			            NOT_EMPTY,  'isset({config}) && {config} == '.ZBX_AUTH_LDAP.' && (isset({update}) || isset({test}))'],
+> 	'user_password' =>	[T_ZBX_STR, O_OPT,      null,			            NOT_EMPTY,  'isset({config}) && {config} == '.ZBX_AUTH_LDAP.' && (isset({update}) || isset({test}))',	_('User password')],
+> 	'ldap_bind_password' =>     [T_ZBX_STR,  O_OPT, null,		             null,                                                      null,			_('Bind password')],
+> 	'ldap_search_attribute' =>  [T_ZBX_STR,  O_OPT, null,	                NOT_EMPTY,  'isset({config}) && {config} == '.ZBX_AUTH_LDAP.' && (isset({update}) || isset({test}))',	_('Search attribute')],
+> 	'change_bind_password' =>   [T_ZBX_STR,  O_OPT, null,                    null,	                                                    null],
+> 	//*keycloak
+> 	'keycloak_auth_url' =>	[T_ZBX_STR, O_OPT,  null,			            NOT_EMPTY,     'isset({config}) && {config} == '.ZBX_AUTH_KEYCLOAK.' && (isset({update}) || isset({test}))',	_('Keycloak Auth Url')],
+> 	'keycloak_realm' =>		[T_ZBX_STR, O_OPT,  null,			            NOT_EMPTY,     'isset({config}) && {config} == '.ZBX_AUTH_KEYCLOAK.' && (isset({update}) || isset({test}))',	_('Keycloak Realm')],
+> 	'keycloak_client_id' =>	[T_ZBX_STR, O_OPT,  null,			            NOT_EMPTY,     'isset({config}) && {config} == '.ZBX_AUTH_KEYCLOAK.' && (isset({update}) || isset({test}))',	_('Keycloak Client Id')],
+>     'keycloak_client_secret' =>	[T_ZBX_STR, O_OPT, null,			        NOT_EMPTY,     'isset({config}) && {config} == '.ZBX_AUTH_KEYCLOAK.' && (isset({update}) || isset({test}))',	_('Keycloak Client Secret')],
+>     'keycloak_client_scope' =>  [T_ZBX_STR, O_OPT, null,                    NOT_EMPTY,     'isset({config}) && {config} == '.ZBX_AUTH_KEYCLOAK.' && (isset({update}) || isset({test}))',    _('Keycloak Client Scope')]
+> 	// 'keycloak_user_name' =>	[T_ZBX_STR, O_OPT,  null,			            NOT_EMPTY,     'isset({config}) && {config} == '.ZBX_AUTH_KEYCLOAK.' && (isset({update}) || isset({test}))',	_('Keycloak User Name')]
+57d61
+< 
+65d68
+< 
+73c76,83
+< 	'ldap_bind_password' => true
+---
+> 	'ldap_bind_password' => true,
+> 	//*keycloak
+> 	'keycloak_auth_url' => true,
+> 	'keycloak_realm' => true,
+> 	'keycloak_client_id' => true,
+>     'keycloak_client_secret' => true,
+>     'keycloak_client_scope' => true,
+> 	// 'keycloak_user_name' => true
+75a86
+> $keycloak_extension_enabled = false;
+85d95
+< 
+87a98,101
+>  * indicate that: with Current-mouse-click-auth-type , do the update|test action.
+>  * need get client-OBJ to adapt to KEYCLOAK:
+>  * 1.old-keycloak-configuration-client....
+>  * 2.new-keycloak-configuration-client....
+88a103,118
+> if (PHP_SESSION_ACTIVE !== session_status()) {
+>     session_start();
+> }
+> $client_old = CWebUser::getOAuth2client();
+> $client_new = CWebUser::getOAuth2client();
+>     $auth_uri = $config['keycloak_auth_url'];
+>     $realm = $config['keycloak_realm'];
+>     $client_id = $config['keycloak_client_id'];
+>     $client_secret = $config['keycloak_client_secret'];
+>     $authorization_uri = sprintf("%s/auth/realms/%s/protocol/openid-connect/auth",$auth_uri,$realm);
+>     $token_uri = sprintf("%s/auth/realms/%s/protocol/openid-connect/token",$auth_uri,$realm);
+>     $logout_uri = sprintf("%s/auth/realms/%s/protocol/openid-connect/logout",$auth_uri,$realm);
+> $client_new->setProvider(new Provider($client_id,$client_secret,$authorization_uri,$token_uri,$logout_uri));
+> session_write_close();
+> $REST = 3;
+> 
+90,91c120,121
+< 	if (hasRequest('update')) {
+< 		$messageSuccess = _('Authentication method changed to Zabbix internal');
+---
+>     if (hasRequest('update')) {
+>         $messageSuccess = _('Authentication method changed to Zabbix internal');
+101,104c131,148
+< 				$result &= DBexecute(
+< 					'UPDATE sessions SET status='.ZBX_SESSION_PASSIVE.
+< 					' WHERE sessionid<>'.zbx_dbstr(CWebUser::$data['sessionid'])
+< 				);
+---
+> 				// $result &= DBexecute(
+> 					// 'UPDATE sessions SET status='.ZBX_SESSION_PASSIVE.
+> 					// ' WHERE sessionid<>'.zbx_dbstr(CWebUser::$data['sessionid'])
+> 				// );
+>                 //This branch means:
+>                 //When you AUTH with KEYCLOAK or HTTP or LADP before,
+>                 //and now want to change to the INTERNAL AUTH ,
+>                 //then click UPDATE button. 
+>                 //the sessions for before-AUTH will be deleted...(For zhiyuan's preconceived...) 
+>                 setcookie('zbx_sessionid',null,-99999);
+>                 unset($_COOKIE['zbx_sessionid']);
+>                 $result &= DBexecute(
+>                     'DELETE from  sessions'.' WHERE sessionid='.zbx_dbstr(CWebUser::$data['sessionid']));
+>                 if ($client_old->hasAccessToken(CWebUser::$data['sessionid'])) {
+>                     $client_old->logout(CWebUser::$data['sessionid']);
+>                     DBexecute('DELETE FROM access_tokens where zbx_session_id='.zbx_dbstr($sessionid));
+>                     // $client_old->deleteAccessToken(CWebUser::$data['sessionid']);
+>                 }
+113a158,161
+>         sleep($REST);
+>         http_response_code(302);
+>         header(sprintf('Location: %s', 'index.php'));
+>         exit;
+163,167c211,243
+< 						$result &= DBexecute(
+< 							'UPDATE sessions SET status='.ZBX_SESSION_PASSIVE.
+< 							' WHERE sessionid<>'.zbx_dbstr(CWebUser::$data['sessionid'])
+< 						);
+< 					}
+---
+> 						// $result &= DBexecute(
+> 							// 'UPDATE sessions SET status='.ZBX_SESSION_PASSIVE.
+> 							// ' WHERE sessionid<>'.zbx_dbstr(CWebUser::$data['sessionid'])
+> 						// );
+>                         //This branch means:
+>                         //When you AUTH with INTERNAL or HTTP or KEYCLOAK before,
+>                         //and now want to change to the LADP AUTH ,
+>                         //then click UPDATE button. 
+>                         //the sessions for before-AUTH will be deleted...(For zhiyuan's preconceived...) 
+>                         setcookie('zbx_sessionid',null,-99999);
+>                         unset($_COOKIE['zbx_sessionid']);
+> 
+>                         $result &= DBexecute(
+>                             'DELETE from  sessions'.' WHERE sessionid='.zbx_dbstr(CWebUser::$data['sessionid']));
+>                         $result &= DBexecute(
+>                             'DELETE from  sessions'.' WHERE userid='.zbx_dbstr('2'));
+>                         if ($client_old->hasAccessToken(CWebUser::$data['sessionid'])) {
+>                             $client_old->logout(CWebUser::$data['sessionid']);
+>                             DBexecute('DELETE FROM access_tokens where zbx_session_id='.zbx_dbstr($sessionid));
+>                             // $client_old->deleteAccessToken(CWebUser::$data['sessionid']);
+>                         }
+>                     }else{
+>                         //This branch means:
+>                         //When you AUTH with LADP  before,
+>                         //and now want to change some LADP configuration for the  LADP AUTH ,
+>                         //then click UPDATE button. 
+>                         //the sessions for before-LADP-AUTH will be deleted...(For zhiyuan's preconceived...) 
+>                         setcookie('zbx_sessionid',null,-99999);
+>                         unset($_COOKIE['zbx_sessionid']);
+> 
+>                         $result &= DBexecute(
+>                             'DELETE from  sessions'.' WHERE sessionid='.zbx_dbstr(CWebUser::$data['sessionid']));
+>                     }
+175a252,255
+>                 sleep($REST);
+>                 http_response_code(302);
+>                 header(sprintf('Location: %s', 'index.php'));
+>                 exit;
+211,214c291,311
+< 				$result &= DBexecute(
+< 					'UPDATE sessions SET status='.ZBX_SESSION_PASSIVE.
+< 					' WHERE sessionid<>'.zbx_dbstr(CWebUser::$data['sessionid'])
+< 				);
+---
+> 				// $result &= DBexecute(
+> 					// 'UPDATE sessions SET status='.ZBX_SESSION_PASSIVE.
+> 					// ' WHERE sessionid<>'.zbx_dbstr(CWebUser::$data['sessionid'])
+> 				// );
+>                 //This branch means:
+>                 //When you AUTH with INTERNAL or LADP or KEYCLOAK before,
+>                 //and now want to change to HTTP AUTH ,
+>                 //then click UPDATE button. 
+>                 //the sessions for before-AUTH will be deleted...(For zhiyuan's preconceived...) 
+>                 setcookie('zbx_sessionid',null,-99999);
+>                 unset($_COOKIE['zbx_sessionid']);
+> 
+>                 $result &= DBexecute(
+>                     'DELETE from  sessions'.' WHERE sessionid='.zbx_dbstr(CWebUser::$data['sessionid']));
+>                 $result &= DBexecute(
+>                     'DELETE from  sessions'.' WHERE userid='.zbx_dbstr('2'));
+>                 if ($client_old->hasAccessToken(CWebUser::$data['sessionid'])) {
+>                     $client_old->logout(CWebUser::$data['sessionid']);
+>                     DBexecute('DELETE FROM access_tokens where zbx_session_id='.zbx_dbstr($sessionid));
+>                     // $client_old->deleteAccessToken(CWebUser::$data['sessionid']);
+>                 }
+221d317
+< 
+223a320,323
+>         sleep($REST);
+>         http_response_code(302);
+>         header(sprintf('Location: %s', 'index.php'));
+>         exit;
+225a326,403
+> elseif ($config['authentication_type'] == ZBX_AUTH_KEYCLOAK) {
+>     $keycloak_extension_enabled = true; //make php support keycloak always true.
+>     $login = false;
+> 
+>     if ($keycloak_extension_enabled && (hasRequest('update') || hasRequest('test'))) {
+>         //go to this branch when one of [update,test] was actived.
+>         try{
+>             //Due to client use the function in CWebUer , so the Provider-OBJ was based on the former keycloak config 
+>             //refresh the Provider-OBJ in there based on the keycloak configuration on browser-form... 
+>             $login = $client_new->checkKeycloakServer();
+>         }
+>         catch(Exception $e){
+>             $login = false;
+>         }
+> 
+>         if (!$login) {
+>             show_error_message(_('Keycloak Server can not not be connected..!'));
+>         }
+>         if(hasRequest('update')){
+>             if (!$login) {
+>                 show_error_message(_('Cannot change authentication method to KEYCLOAK,Due to keycloak is not be connected..!'));
+>             }else{
+>                 $messageSuccess = $isAuthenticationTypeChanged? _('Authentication method changed to Zabbix keycloak'): _('Keycloak authentication changed');
+>                 $messageFailed = $isAuthenticationTypeChanged? _('Cannot change authentication method to Zabbix keycloak'):_('Cannot change authentication');
+>                 DBstart();
+>                 $result = update_config($config);
+>                 if ($result) {
+>                     // reset all sessions
+>                     if ($isAuthenticationTypeChanged) {
+>                         // $result &= DBexecute(
+>                         // 'UPDATE sessions SET status='.ZBX_SESSION_PASSIVE.' WHERE sessionid<>'.zbx_dbstr(CWebUser::$data['sessionid']));
+>                         //This branch means:
+>                         //When you AUTH with INTERNAL or HTTP or LADP before,
+>                         //and now want to change to the KEYCLOAK AUTH ,
+>                         //then click UPDATE button. 
+>                         //the sessions for before-AUTH will be removed...(For zhiyuan's preconceived...) 
+>                         setcookie('zbx_sessionid',null,-99999);
+>                         unset($_COOKIE['zbx_sessionid']);
+> 
+>                         $result &= DBexecute(
+>                             'DELETE from  sessions'.' WHERE sessionid='.zbx_dbstr(CWebUser::$data['sessionid']));
+>                         $result &= DBexecute(
+>                             'DELETE from  sessions'.' WHERE userid='.zbx_dbstr('2'));
+>                         
+>                     }else{
+>                         //This branch means:
+>                         //When you also AUTH with KEYCLAOK  before,
+>                         //and now configure the new KEYCLOAK server ,
+>                         //then click UPDATE button. 
+>                         //the sessions/tokenData/cookie for before-keycloak  will be removed (For zhiyuan's Preconceived...) 
+>                         setcookie('zbx_sessionid',null,-99999);
+>                         unset($_COOKIE['zbx_sessionid']);
+> 
+>                         $result &= DBexecute(
+>                             'DELETE from  sessions'.' WHERE sessionid='.zbx_dbstr(CWebUser::$data['sessionid']));
+>                         $client_old->logout(CWebUser::$data['sessionid']);
+>                         DBexecute('DELETE FROM access_tokens where zbx_session_id='.zbx_dbstr($sessionid));
+>                         // $client_old->deleteAccessToken(CWebUser::$data['sessionid']);
+>                     }
+>                     $isAuthenticationTypeChanged = false;
+>                     add_audit(AUDIT_ACTION_UPDATE, AUDIT_RESOURCE_ZABBIX_CONFIG, $messageSuccess);
+>                 }
+>                 $result = DBend($result);
+>                 show_messages($result, $messageSuccess, $messageFailed);
+>                 sleep($REST);
+>                 http_response_code(302);
+>                 header(sprintf('Location: %s', 'index.php'));
+>                 exit;
+>             }
+>         }
+>         elseif(hasRequest('test')){
+>             show_messages($login, _('Keycloak Server OK,can be connected..!'), _('Keycloak Server Error,can not be connected..!'));
+>         }
+>     }
+>     elseif(!$keycloak_extension_enabled){
+>         show_error_message(_('zabbix not support keycloak....'));
+>     }
+> }
+240c418,419
+< 	'ldap_extension_enabled' => $ldap_extension_enabled
+---
+> 	'ldap_extension_enabled' => $ldap_extension_enabled,
+> 	'keycloak_extension_enabled' => $keycloak_extension_enabled

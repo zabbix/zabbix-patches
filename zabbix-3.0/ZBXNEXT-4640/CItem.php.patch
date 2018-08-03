@@ -1,0 +1,10 @@
+20c20
+< 
+---
+> //support KEYCLOAK
+351c351
+< 		$sqlParts = $this->applyQuerySortOptions($this->tableName(), $this->tableAlias(), $options, $sqlParts);
+---
+>         $sqlParts = $this->applyQuerySortOptions($this->tableName(), $this->tableAlias(), $options, $sqlParts);
+381d380
+< 

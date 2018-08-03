@@ -1,0 +1,129 @@
+20c20,24
+< 
+---
+> require_once realpath(dirname(__FILE__).'/../../..').'/vendor/autoload.php';
+> use fkooman\OAuth\Client\Http\CurlHttpClient;
+> use fkooman\OAuth\Client\OAuthClient4zk;
+> use fkooman\OAuth\Client\Provider;
+> use fkooman\OAuth\Client\zkTokenStorage;
+98,102c102,117
+< 	public static function logout() {
+< 		self::$data['sessionid'] = self::getSessionCookie();
+< 		self::$data = API::User()->logout([]);
+< 		CSession::destroy();
+< 		zbx_unsetcookie('zbx_sessionid');
+---
+>     public static function logout() {
+>         $config = select_config();
+>         if ($config['authentication_type'] == ZBX_AUTH_KEYCLOAK){
+>             self::$data['sessionid'] = self::getSessionCookie();
+>             self::$data = API::User()->logout([]);
+>             // CLEAN cookie on Browser side
+>             CSession::destroy();
+>             zbx_unsetcookie('zbx_sessionid');
+>         }else{
+>             self::$data['sessionid'] = self::getSessionCookie();
+>             self::$data = API::User()->logout([]);
+>             CSession::destroy();
+>             zbx_unsetcookie('zbx_sessionid');
+> 
+>         }
+> 
+106,124c121,143
+< 		try {
+< 			if ($sessionId !== null) {
+< 				self::$data = API::User()->checkAuthentication([$sessionId]);
+< 			}
+< 
+< 			if ($sessionId === null || empty(self::$data)) {
+< 				self::setDefault();
+< 				self::$data = API::User()->login([
+< 					'user' => ZBX_GUEST_USER,
+< 					'password' => '',
+< 					'userData' => true
+< 				]);
+< 
+< 				if (empty(self::$data)) {
+< 					clear_messages(1);
+< 					throw new Exception();
+< 				}
+< 				$sessionId = self::$data['sessionid'];
+< 			}
+---
+>         try {
+>             $config = select_config();
+>             if ($sessionId !== null) {
+>                 self::$data = API::User()->checkAuthentication([$sessionId]);
+>             }
+>             if ($sessionId === null || empty(self::$data)) {
+>                 if ($config['authentication_type'] == ZBX_AUTH_KEYCLOAK) {
+>                     self::$data = CUser::keycloakWebLogin();
+>                 }else{
+>                     self::setDefault();
+>                     self::$data = API::User()->login([
+>                         'user' => ZBX_GUEST_USER,
+>                         'password' => '',
+>                         'userData' => true
+>                     ]);
+> 
+>                     if (empty(self::$data)) {
+>                         clear_messages(1);
+>                         throw new Exception();
+>                     }
+>                     $sessionId = self::$data['sessionid'];
+>                     }
+>                 }
+129,136c148,155
+< 
+< 			if (self::$set_cookie) {
+< 				self::setSessionCookie($sessionId);
+< 			}
+< 			else {
+< 				self::$set_cookie = true;
+< 			}
+< 
+---
+>             if ($config['authentication_type'] != ZBX_AUTH_KEYCLOAK) {
+>                 if (self::$set_cookie) {
+>                     self::setSessionCookie($sessionId);
+>                 }
+>                 else {
+>                     self::$set_cookie = true;
+>                 }
+>             }
+171c190
+< 			'debug_mode' => false
+---
+>             'debug_mode' => false
+211c230,258
+< 	}
+---
+>     }
+> 
+>     /**
+>      * The following function are designed for oauth2-clien....
+>      * get a OAuth2 Client Object.
+>      * @param none
+>      * @return object
+>      **/
+>     public static function getOAuth2client(){
+>         // This client Obj should not be re-used by $SESSION Array to keep only one obj in zabbix
+>         // Because the client should get the Auth time on every new actions
+>         // Disable this $client = $_SESSION['zbx_oauth2_client_obj'];
+>         $config=select_config();
+>         $userId = 'zbx';
+>         $auth_uri = $config['keycloak_auth_url'];
+>         $realm = $config['keycloak_realm'];
+>         $client_id = $config['keycloak_client_id'];
+>         $client_secret = $config['keycloak_client_secret'];
+>         #--------
+>         $authorization_uri = sprintf("%s/auth/realms/%s/protocol/openid-connect/auth",$auth_uri,$realm);
+>         $token_uri = sprintf("%s/auth/realms/%s/protocol/openid-connect/token",$auth_uri,$realm);
+>         $logout_uri = sprintf("%s/auth/realms/%s/protocol/openid-connect/logout",$auth_uri,$realm);
+>         $client = new OAuthClient4zk(new zkTokenStorage(),new CurlHttpClient(['allowHttp' => true])); 
+>         $client->setProvider(new Provider($client_id,$client_secret,$authorization_uri,$token_uri,$logout_uri));
+>         $client->setUserId($userId);
+>         $_SESSION['zbx_oauth2_client_obj'] =  $client;
+>         return $client;
+>     }
+> 

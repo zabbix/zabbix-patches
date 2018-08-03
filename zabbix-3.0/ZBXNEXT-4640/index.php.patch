@@ -1,0 +1,46 @@
+21c21
+< 
+---
+> //support KEYCLOAK
+23,24d22
+< CWebUser::disableSessionCookie();
+< 
+26a25
+> CWebUser::disableSessionCookie();
+41c40,43
+< check_fields($fields);
+---
+> $config = select_config();
+> if ($config['authentication_type'] != ZBX_AUTH_KEYCLOAK){
+>     check_fields($fields);
+> }
+45,51c47,65
+< 	DBstart();
+< 	add_audit_details(AUDIT_ACTION_LOGOUT, AUDIT_RESOURCE_USER, CWebUser::$data['userid'], '', _('Manual Logout'),
+< 		CWebUser::$data['userid']
+< 	);
+< 	DBend(true);
+< 	CWebUser::logout();
+< 	redirect('index.php');
+---
+>     DBstart();
+>     add_audit_details(AUDIT_ACTION_LOGOUT, AUDIT_RESOURCE_USER, CWebUser::$data['userid'], '', _('Manual Logout'),
+>         CWebUser::$data['userid']
+>     );
+>     DBend(true);
+>     CWebUser::logout();
+>     redirect('index.php');
+> }
+> 
+> // login via keycloak
+> if ($config['authentication_type'] == ZBX_AUTH_KEYCLOAK) {
+>     try{
+>         $url = ZBX_DEFAULT_URL;
+>         redirect($url);
+>         exit;
+>     }catch(Exception $e){
+>         echo sprintf('ERROR: %s', $e->getMessage());
+>         exit;
+>     } 
+54d67
+< $config = select_config();

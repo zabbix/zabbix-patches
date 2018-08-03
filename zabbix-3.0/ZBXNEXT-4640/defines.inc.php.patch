@@ -1,0 +1,7 @@
+21c21
+< 
+---
+> //support KEYCLOAK
+97a98,99
+> //keycloak
+> define('ZBX_AUTH_KEYCLOAK',	3);
