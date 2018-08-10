@@ -104,3 +104,27 @@ Please, vote for ZBXNEXT you're using or just care about - that could help to so
 [ZBX-5470](https://support.zabbix.com/browse/ZBX-5470): Add template_id in "Template cannot be linked to another template" exception
 
 [ZBX-12423](https://support.zabbix.com/browse/ZBX-12423): Improve WEB UI - Show Server Name instead of server in the right corner of UI.
+
+## How to add a patch to this repo
+
+1. Download latest sources for the version you want to apply patch to from [Download Zabbix sources](https://www.zabbix.com/download_sources) page
+1. Extract it into two directories, `a` and `b`
+1. Apply your changes to `b` directory
+1. Create a patch file:
+    ```bash
+    diff -rua a b > ZBXNEXT-XXX.patch
+    ```
+1. Review the changes, fix the b directory content if needed (things like tabs -> spaces conversion, unnecessary newlines adding or removing should not be present) and re-create a patch
+1. Fork this repo, clone the fork and `cd` inside it
+1. Create directory like `ZBXNEXT-XXX` in `zabbix-<version>` directory and move your `.patch` file there
+1. Add new entry to `zabbix-<version>/patches.def` file for your patch
+1. Apply the patch to `a` directory to see what it can be applied:
+    ```bash
+    ./patch-zabbix.sh <version> ~/Desktop/a
+    ```
+1. Check what the result is the one you expect, `a` directory have no difference from `b` directory:
+    ```bash
+    diff -rua a b
+    ```
+1. Add an entry to `README.md`
+1. Commit and push your changes and send a pull request there
