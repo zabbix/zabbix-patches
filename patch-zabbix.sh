@@ -82,7 +82,7 @@ for patch in ${patches}; do
     popd > /dev/null
     while read extra; do
         echo "copying file: $extra"
-        cp ${extra}
+        cp -r ${extra}
     done < <(echo "${patch_extra[$patch]}" | sed -e "s| | $working_directory|" -e "s|^|${patch_name[$patch]}/|") 2> /dev/null
 done
 popd > /dev/null

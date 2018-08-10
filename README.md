@@ -47,6 +47,8 @@ Please, vote for ZBXNEXT you're using or just care about - that could help to so
 
 [ZBXNEXT-2819](https://support.zabbix.com/browse/ZBXNEXT-2819): Adds an option to disable showing groups without problems in system status (fixed since **3.4**)
 
+[ZBXNEXT-4640](https://support.zabbix.com/browse/ZBXNEXT-4640): [Keycloak](https://www.keycloak.org/) authentication integration
+
 [ZBX-5470](https://support.zabbix.com/browse/ZBX-5470): Add template_id in "Template cannot be linked to another template" exception
 
 ### Zabbix 3.2

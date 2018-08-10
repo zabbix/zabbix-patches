@@ -41,3 +41,10 @@ id|type|details
 9|f|y
 9|desc|Add possibility to export inventory page data to CSV
 9|ltr|3
+
+10|name|ZBXNEXT-4640
+10|f|y
+10|desc|Keycloak authentication integration
+10|ltr|3
+10|extra|vendor vendor
+10|extra|index_callback.php index_callback.php
