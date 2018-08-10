@@ -1,0 +1,1306 @@
+Last-Update: 2018-08-03
+Forwarded: not-needed
+Author: Yuan <zhiyuan.zou@nokia.sbell.com>
+Description: This patch adds keycloak authentication method integration into Zabbix.
+
+vendor folder:
+    1: this is a php-library developed by "François Kooman", https://gitlab.com/fkooman/php-oauth2-client
+    2: Avoid the DB actions provided by this library due to zabbix has own DB actions
+    3: I advise zabbix-official rewrite the functions of this library.
+
+Everyone welcome to post comments for this KEYCLOAK Feature.
+
+Zabbix reference links:
+    Git repo: https://github.com/zabbix/zabbix-patches/issues/16
+    JIRA : https://support.zabbix.com/browse/ZBXNEXT-4640
+    Forum :https://www.zabbix.com/forum/zabbix-help/52013-zabbix-has-plan-to-integrate-keycloak-as-sso
+    Share: https://share.zabbix.com/component/mtree/cat-app/security/zabbix-integrate-with-keycloak-zbxnext-4640?Itemid=
+
+--- a/frontends/php/authentication.php
++++ b/frontends/php/authentication.php
+@@ -20,6 +20,11 @@
+
+
+ require_once dirname(__FILE__).'/include/config.inc.php';
++require_once dirname(__FILE__).'/vendor/autoload.php';
++use fkooman\OAuth\Client\Http\CurlHttpClient;
++use fkooman\OAuth\Client\OAuthClient4zk;
++use fkooman\OAuth\Client\Provider;
++use fkooman\OAuth\Client\AccessToken;
+
+ $page['title'] = _('Configuration of authentication');
+ $page['file'] = 'authentication.php';
+@@ -28,7 +33,7 @@
+
+ //	VAR						TYPE	OPTIONAL	FLAGS	VALIDATION	EXCEPTION
+ $fields = [
+-	'config' =>			[T_ZBX_INT, O_OPT, null, IN(ZBX_AUTH_INTERNAL.','.ZBX_AUTH_LDAP.','.ZBX_AUTH_HTTP), null],
++	'config' =>			[T_ZBX_INT, O_OPT, null, IN(ZBX_AUTH_INTERNAL.','.ZBX_AUTH_LDAP.','.ZBX_AUTH_HTTP.','.ZBX_AUTH_KEYCLOAK), null],
+ 	'form_refresh' =>	[T_ZBX_INT, O_OPT, null,			null, null],
+ 	// actions
+ 	'update' =>			[T_ZBX_STR, O_OPT, P_SYS|P_ACT,	null, null],
+@@ -50,6 +55,13 @@
+ 	'user_password' =>	[T_ZBX_STR, O_OPT, null,			NOT_EMPTY,
+ 		'isset({config}) && {config} == '.ZBX_AUTH_LDAP.' && (isset({update}) || isset({test}))',	_('User password')],
+ 	'change_bind_password' => [T_ZBX_STR, O_OPT, null, null,	null]
++	//*keycloak
++	'keycloak_auth_url' =>	[T_ZBX_STR, O_OPT,  null,			            NOT_EMPTY,     'isset({config}) && {config} == '.ZBX_AUTH_KEYCLOAK.' && (isset({update}) || isset({test}))',	_('Keycloak Auth Url')],
++	'keycloak_realm' =>		[T_ZBX_STR, O_OPT,  null,			            NOT_EMPTY,     'isset({config}) && {config} == '.ZBX_AUTH_KEYCLOAK.' && (isset({update}) || isset({test}))',	_('Keycloak Realm')],
++	'keycloak_client_id' =>	[T_ZBX_STR, O_OPT,  null,			            NOT_EMPTY,     'isset({config}) && {config} == '.ZBX_AUTH_KEYCLOAK.' && (isset({update}) || isset({test}))',	_('Keycloak Client Id')],
++	'keycloak_client_secret' =>	[T_ZBX_STR, O_OPT, null,			        NOT_EMPTY,     'isset({config}) && {config} == '.ZBX_AUTH_KEYCLOAK.' && (isset({update}) || isset({test}))',	_('Keycloak Client Secret')],
++	'keycloak_client_scope' =>  [T_ZBX_STR, O_OPT, null,                    NOT_EMPTY,     'isset({config}) && {config} == '.ZBX_AUTH_KEYCLOAK.' && (isset({update}) || isset({test}))',    _('Keycloak Client Scope')]
++	// 'keycloak_user_name' =>	[T_ZBX_STR, O_OPT,  null,			            NOT_EMPTY,     'isset({config}) && {config} == '.ZBX_AUTH_KEYCLOAK.' && (isset({update}) || isset({test}))',	_('Keycloak User Name')]
+ ];
+ check_fields($fields);
+
+@@ -70,9 +82,17 @@
+ 	'ldap_base_dn' => true,
+ 	'ldap_search_attribute' => true,
+ 	'ldap_bind_dn' => true,
+-	'ldap_bind_password' => true
++	'ldap_bind_password' => true,
++	//*keycloak
++	'keycloak_auth_url' => true,
++	'keycloak_realm' => true,
++	'keycloak_client_id' => true,
++	'keycloak_client_secret' => true,
++	'keycloak_client_scope' => true
++	// 'keycloak_user_name' => true
+ ];
+ $ldap_extension_enabled = false;
++$keycloak_extension_enabled = false;
+
+ foreach ($config as $field => $value) {
+ 	if (array_key_exists($field, $fields)) {
+@@ -85,7 +105,27 @@
+
+ /*
+  * Actions
++ * indicate that: with Current-mouse-click-auth-type , do the update|test action.
++ * need get client-OBJ to adapt to KEYCLOAK:
++ * 1.old-keycloak-configuration-client....
++ * 2.new-keycloak-configuration-client....
+  */
++if (PHP_SESSION_ACTIVE !== session_status()) {
++	session_start();
++}
++$client_old = CWebUser::getOAuth2client();
++$client_new = CWebUser::getOAuth2client();
++	$auth_uri = $config['keycloak_auth_url'];
++	$realm = $config['keycloak_realm'];
++	$client_id = $config['keycloak_client_id'];
++	$client_secret = $config['keycloak_client_secret'];
++	$authorization_uri = sprintf("%s/auth/realms/%s/protocol/openid-connect/auth",$auth_uri,$realm);
++	$token_uri = sprintf("%s/auth/realms/%s/protocol/openid-connect/token",$auth_uri,$realm);
++	$logout_uri = sprintf("%s/auth/realms/%s/protocol/openid-connect/logout",$auth_uri,$realm);
++$client_new->setProvider(new Provider($client_id,$client_secret,$authorization_uri,$token_uri,$logout_uri));
++session_write_close();
++$REST = 3;
++
+ if ($config['authentication_type'] == ZBX_AUTH_INTERNAL) {
+ 	if (hasRequest('update')) {
+ 		$messageSuccess = _('Authentication method changed to Zabbix internal');
+@@ -98,10 +138,24 @@
+ 		if ($result) {
+ 			// reset all sessions
+ 			if ($isAuthenticationTypeChanged) {
++				// $result &= DBexecute(
++					// 'UPDATE sessions SET status='.ZBX_SESSION_PASSIVE.
++					// ' WHERE sessionid<>'.zbx_dbstr(CWebUser::$data['sessionid'])
++				// );
++				//This branch means:
++				//When you AUTH with KEYCLOAK or HTTP or LADP before,
++				//and now want to change to the INTERNAL AUTH ,
++				//then click UPDATE button.
++				//the sessions for before-AUTH will be deleted...(For zhiyuan's preconceived...)
++				setcookie('zbx_sessionid',null,-99999);
++				unset($_COOKIE['zbx_sessionid']);
+ 				$result &= DBexecute(
+-					'UPDATE sessions SET status='.ZBX_SESSION_PASSIVE.
+-					' WHERE sessionid<>'.zbx_dbstr(CWebUser::$data['sessionid'])
+-				);
++					'DELETE from  sessions'.' WHERE sessionid='.zbx_dbstr(CWebUser::$data['sessionid']));
++				if ($client_old->hasAccessToken(CWebUser::$data['sessionid'])) {
++					$client_old->logout(CWebUser::$data['sessionid']);
++					DBexecute('DELETE FROM access_tokens where zbx_session_id='.zbx_dbstr($sessionid));
++					// $client_old->deleteAccessToken(CWebUser::$data['sessionid']);
++				}
+ 			}
+
+ 			$isAuthenticationTypeChanged = false;
+@@ -111,6 +165,10 @@
+
+ 		$result = DBend($result);
+ 		show_messages($result, $messageSuccess, $messageFailed);
++		sleep($REST);
++		http_response_code(302);
++		header(sprintf('Location: %s', 'index.php'));
++		exit;
+ 	}
+ }
+ elseif ($config['authentication_type'] == ZBX_AUTH_LDAP) {
+@@ -160,10 +218,38 @@
+
+ 					// reset all sessions
+ 					if ($isAuthenticationTypeChanged) {
++						// $result &= DBexecute(
++							// 'UPDATE sessions SET status='.ZBX_SESSION_PASSIVE.
++							// ' WHERE sessionid<>'.zbx_dbstr(CWebUser::$data['sessionid'])
++						// );
++						//This branch means:
++						//When you AUTH with INTERNAL or HTTP or KEYCLOAK before,
++						//and now want to change to the LADP AUTH ,
++						//then click UPDATE button.
++						//the sessions for before-AUTH will be deleted...(For zhiyuan's preconceived...)
++						setcookie('zbx_sessionid',null,-99999);
++						unset($_COOKIE['zbx_sessionid']);
++
++						$result &= DBexecute(
++							'DELETE from  sessions'.' WHERE sessionid='.zbx_dbstr(CWebUser::$data['sessionid']));
+ 						$result &= DBexecute(
+-							'UPDATE sessions SET status='.ZBX_SESSION_PASSIVE.
+-							' WHERE sessionid<>'.zbx_dbstr(CWebUser::$data['sessionid'])
+-						);
++							'DELETE from  sessions'.' WHERE userid='.zbx_dbstr('2'));
++						if ($client_old->hasAccessToken(CWebUser::$data['sessionid'])) {
++							$client_old->logout(CWebUser::$data['sessionid']);
++							DBexecute('DELETE FROM access_tokens where zbx_session_id='.zbx_dbstr($sessionid));
++							// $client_old->deleteAccessToken(CWebUser::$data['sessionid']);
++						}
++					}else{
++						//This branch means:
++						//When you AUTH with LADP  before,
++						//and now want to change some LADP configuration for the  LADP AUTH ,
++						//then click UPDATE button.
++						//the sessions for before-LADP-AUTH will be deleted...(For zhiyuan's preconceived...)
++						setcookie('zbx_sessionid',null,-99999);
++						unset($_COOKIE['zbx_sessionid']);
++
++						$result &= DBexecute(
++							'DELETE from  sessions'.' WHERE sessionid='.zbx_dbstr(CWebUser::$data['sessionid']));
+ 					}
+
+ 					$isAuthenticationTypeChanged = false;
+@@ -173,6 +259,10 @@
+
+ 				$result = DBend($result);
+ 				show_messages($result, $messageSuccess, $messageFailed);
++				sleep($REST);
++				http_response_code(302);
++				header(sprintf('Location: %s', 'index.php'));
++				exit;
+ 			}
+ 		}
+ 		elseif (hasRequest('test')) {
+@@ -208,10 +298,27 @@
+ 		if ($result) {
+ 			// reset all sessions
+ 			if ($isAuthenticationTypeChanged) {
++				// $result &= DBexecute(
++					// 'UPDATE sessions SET status='.ZBX_SESSION_PASSIVE.
++					// ' WHERE sessionid<>'.zbx_dbstr(CWebUser::$data['sessionid'])
++				// );
++				//This branch means:
++				//When you AUTH with INTERNAL or LADP or KEYCLOAK before,
++				//and now want to change to HTTP AUTH ,
++				//then click UPDATE button.
++				//the sessions for before-AUTH will be deleted...(For zhiyuan's preconceived...)
++				setcookie('zbx_sessionid',null,-99999);
++				unset($_COOKIE['zbx_sessionid']);
++
++				$result &= DBexecute(
++					'DELETE from  sessions'.' WHERE sessionid='.zbx_dbstr(CWebUser::$data['sessionid']));
+ 				$result &= DBexecute(
+-					'UPDATE sessions SET status='.ZBX_SESSION_PASSIVE.
+-					' WHERE sessionid<>'.zbx_dbstr(CWebUser::$data['sessionid'])
+-				);
++					'DELETE from  sessions'.' WHERE userid='.zbx_dbstr('2'));
++				if ($client_old->hasAccessToken(CWebUser::$data['sessionid'])) {
++					$client_old->logout(CWebUser::$data['sessionid']);
++					DBexecute('DELETE FROM access_tokens where zbx_session_id='.zbx_dbstr($sessionid));
++					// $client_old->deleteAccessToken(CWebUser::$data['sessionid']);
++				}
+ 			}
+
+ 			$isAuthenticationTypeChanged = false;
+@@ -221,6 +328,89 @@
+
+ 		$result = DBend($result);
+ 		show_messages($result, $messageSuccess, $messageFailed);
++		sleep($REST);
++		http_response_code(302);
++		header(sprintf('Location: %s', 'index.php'));
++		exit;
++	}
++}
++elseif ($config['authentication_type'] == ZBX_AUTH_KEYCLOAK) {
++	$keycloak_extension_enabled = true; //make php support keycloak always true.
++	$login = false;
++
++	if ($keycloak_extension_enabled && (hasRequest('update') || hasRequest('test'))) {
++		//go to this branch when one of [update,test] was actived.
++		try{
++			//Due to client use the function in CWebUer , so the Provider-OBJ was based on the former keycloak config
++			//refresh the Provider-OBJ in there based on the keycloak configuration on browser-form...
++			$login = $client_new->checkKeycloakServer();
++		}
++		catch(Exception $e){
++			$login = false;
++		}
++
++		if (!$login) {
++			show_error_message(_('Keycloak Server can not not be connected..!'));
++		}
++		if(hasRequest('update')){
++			if (!$login) {
++				show_error_message(_('Cannot change authentication method to KEYCLOAK,Due to keycloak is not be connected..!'));
++			}else{
++				$messageSuccess = $isAuthenticationTypeChanged? _('Authentication method changed to Zabbix keycloak'): _('Keycloak authentication changed');
++				$messageFailed = $isAuthenticationTypeChanged? _('Cannot change authentication method to Zabbix keycloak'):_('Cannot change authentication');
++				DBstart();
++				$result = update_config($config);
++				if ($result) {
++					// reset all sessions
++					if ($isAuthenticationTypeChanged) {
++						// $result &= DBexecute(
++						// 'UPDATE sessions SET status='.ZBX_SESSION_PASSIVE.' WHERE sessionid<>'.zbx_dbstr(CWebUser::$data['sessionid']));
++						//This branch means:
++						//When you AUTH with INTERNAL or HTTP or LADP before,
++						//and now want to change to the KEYCLOAK AUTH ,
++						//then click UPDATE button.
++						//the sessions for before-AUTH will be removed...(For zhiyuan's preconceived...)
++						setcookie('zbx_sessionid',null,-99999);
++						unset($_COOKIE['zbx_sessionid']);
++
++						$result &= DBexecute(
++							'DELETE from  sessions'.' WHERE sessionid='.zbx_dbstr(CWebUser::$data['sessionid']));
++						$result &= DBexecute(
++							'DELETE from  sessions'.' WHERE userid='.zbx_dbstr('2'));
++
++					}else{
++						//This branch means:
++						//When you also AUTH with KEYCLAOK  before,
++						//and now configure the new KEYCLOAK server ,
++						//then click UPDATE button.
++						//the sessions/tokenData/cookie for before-keycloak  will be removed (For zhiyuan's Preconceived...)
++						setcookie('zbx_sessionid',null,-99999);
++						unset($_COOKIE['zbx_sessionid']);
++
++						$result &= DBexecute(
++							'DELETE from  sessions'.' WHERE sessionid='.zbx_dbstr(CWebUser::$data['sessionid']));
++						$client_old->logout(CWebUser::$data['sessionid']);
++						DBexecute('DELETE FROM access_tokens where zbx_session_id='.zbx_dbstr($sessionid));
++						// $client_old->deleteAccessToken(CWebUser::$data['sessionid']);
++					}
++					$isAuthenticationTypeChanged = false;
++					add_audit(AUDIT_ACTION_UPDATE, AUDIT_RESOURCE_ZABBIX_CONFIG, $messageSuccess);
++				}
++
++				$result = DBend($result);
++				show_messages($result, $messageSuccess, $messageFailed);
++				sleep($REST);
++				http_response_code(302);
++				header(sprintf('Location: %s', 'index.php'));
++				exit;
++			}
++		}
++		elseif(hasRequest('test')){
++			show_messages($login, _('Keycloak Server OK,can be connected..!'), _('Keycloak Server Error,can not be connected..!'));
++		}
++	}
++	elseif(!$keycloak_extension_enabled){
++		show_error_message(_('zabbix not support keycloak....'));
+ 	}
+ }
+
+@@ -237,7 +427,8 @@
+ 	'user_password' => getRequest('user_password', ''),
+ 	'user_list' => null,
+ 	'change_bind_password' => getRequest('change_bind_password'),
+-	'ldap_extension_enabled' => $ldap_extension_enabled
++	'ldap_extension_enabled' => $ldap_extension_enabled,
++	'keycloak_extension_enabled' => $keycloak_extension_enabled
+ ];
+
+ // get tab title
+--- a/frontends/php/include/classes/api/services/CUser.php
++++ b/frontends/php/include/classes/api/services/CUser.php
+@@ -24,6 +24,13 @@
+  *
+  * @package API
+  */
++require_once realpath(dirname(__FILE__).'/../../../..').'/vendor/autoload.php';
++use fkooman\OAuth\Client\Http\CurlHttpClient;
++use fkooman\OAuth\Client\OAuthClient4zk;
++use fkooman\OAuth\Client\Provider;
++use fkooman\OAuth\Client\AccessToken;
++
++
+ class CUser extends CApiService {
+
+ 	protected $tableName = 'users';
+@@ -1031,151 +1038,238 @@
+
+ 	public function logout() {
+ 		$sessionId = self::$userData['sessionid'];
++		$config = select_config();
++		if ($config['authentication_type'] == ZBX_AUTH_KEYCLOAK){
++			if (PHP_SESSION_ACTIVE !== session_status()) {
++				session_start();
++			}
++			$client = CWebUser::getOAuth2client();
++			//DELETE SESSION on keycloak side.
++			$client->logout($sessionId);
++			//DELETE TOKEN on zabbix DB side.
++			DBexecute('DELETE FROM access_tokens where zbx_session_id='.zbx_dbstr($sessionid));
++			//DELETE ZBX_DEFAULT_SESSION on zabbix DB side.
++			DBexecute('DELETE FROM sessions WHERE sessionid='.zbx_dbstr($sessionId));
++			//CLEAN  PHP_SESSION Array
++			// $_SESSION = array();
++			session_write_close();
++			// CSession::destroy();
++
++		}else{
++			$session = DBfetch(DBselect(
++				'SELECT s.userid'.
++				' FROM sessions s'.
++				' WHERE s.sessionid='.zbx_dbstr($sessionId).
++					' AND s.status='.ZBX_SESSION_ACTIVE
++			));
+
+-		$session = DBfetch(DBselect(
+-			'SELECT s.userid'.
+-			' FROM sessions s'.
+-			' WHERE s.sessionid='.zbx_dbstr($sessionId).
+-				' AND s.status='.ZBX_SESSION_ACTIVE
+-		));
++			if (!$session) {
++				self::exception(ZBX_API_ERROR_PARAMETERS, _('Cannot logout.'));
++			}
+
+-		if (!$session) {
+-			self::exception(ZBX_API_ERROR_PARAMETERS, _('Cannot logout.'));
++			DBexecute('DELETE FROM sessions WHERE status='.ZBX_SESSION_PASSIVE.' AND userid='.zbx_dbstr($session['userid']));
++			DBexecute('UPDATE sessions SET status='.ZBX_SESSION_PASSIVE.' WHERE sessionid='.zbx_dbstr($sessionId));
+ 		}
+-
+-		DBexecute('DELETE FROM sessions WHERE status='.ZBX_SESSION_PASSIVE.' AND userid='.zbx_dbstr($session['userid']));
+-		DBexecute('UPDATE sessions SET status='.ZBX_SESSION_PASSIVE.' WHERE sessionid='.zbx_dbstr($sessionId));
+-
+ 		return true;
+ 	}
+
+ 	/**
+-	 * Login user.
++	 * keycloak Login user.
+ 	 *
+-	 * @param array $user
+-	 * @param array $user['user']		User alias
+-	 * @param array $user['password']	User password
+ 	 *
+-	 * @return string					session id
+-	 */
++	 * @return keycloak AUTH page		session id
++	 **/
++	public function keycloakWebLogin() {
++		if (PHP_SESSION_ACTIVE !== session_status()) {
++			session_start();
++		}
++		$scheme = $_SERVER['REQUEST_SCHEME'];
++		$address = $_SERVER['SERVER_NAME'];
++		$port = $_SERVER['SERVER_PORT'];
++		$prefix = $_SERVER['CONTEXT_PREFIX'];
++		#----------
++		$resourceUri =  sprintf("%s://%s:%s%s/index.php",$scheme,$address,$port,$prefix);
++		$callbackUri =  sprintf("%s://%s:%s%s/index_callback.php",$scheme,$address,$port,$prefix);
++		$config=select_config();
++		$requestScope = $config['keycloak_client_scope'];
++		$client = CWebUser::getOAuth2client();
++		session_write_close();
++		http_response_code(302);
++		header(sprintf('Location: %s',$client->getAuthorizeUri($requestScope, $callbackUri)));
++	}
++
++	public function keycloakDAGLogin($user) {
++		if (PHP_SESSION_ACTIVE !== session_status()) {
++			session_start();
++		}
++		$config=select_config();
++		$requestScope = $config['keycloak_client_scope'];
++		$client = CWebUser::getOAuth2client();
++		$res = $client->DAGloginKeycloakServer($user);
++		session_write_close();
++		return $res;
++	}
++
++
++
+ 	public function login($user) {
+ 		$name = $user['user'];
+ 		$password = md5($user['password']);
+
+-		$userInfo = DBfetch(DBselect(
+-			'SELECT u.userid,u.attempt_failed,u.attempt_clock,u.attempt_ip'.
+-			' FROM users u'.
+-			' WHERE u.alias='.zbx_dbstr($name)
+-		));
+-		if (!$userInfo) {
+-			self::exception(ZBX_API_ERROR_PARAMETERS, _('Login name or password is incorrect.'));
+-		}
++		//add the following ZBX_AUTH_KEYCLOAK Branch for jsonRpc login...
++		$config = select_config();
++		if ($config['authentication_type'] == ZBX_AUTH_KEYCLOAK){
++			$result = $this->keycloakDAGLogin($user);
++			if (false != $result || !empty($result)) {
++				$userInfo = DBfetch(DBselect(
++					'SELECT u.userid,u.attempt_failed,u.attempt_clock,u.attempt_ip'.
++					' FROM users u'.
++					' WHERE u.alias='.zbx_dbstr($name)
++				));
++				if (!$userInfo) {
++					self::exception(ZBX_API_ERROR_PARAMETERS, _('Login name or password is incorrect.'));
++				}
++				// check system permissions
++				if (!check_perm2system($userInfo['userid'])) {
++					self::exception(ZBX_API_ERROR_PARAMETERS, _('No permissions for system access.'));
++				}
++				$dbAccess = DBfetch(DBselect(
++					'SELECT MAX(g.gui_access) AS gui_access'.
++					' FROM usrgrp g,users_groups ug'.
++					' WHERE ug.userid='.zbx_dbstr($userInfo['userid']).
++						' AND g.usrgrpid=ug.usrgrpid'
++				));
++
++				if (zbx_empty($dbAccess['gui_access'])) {
++					$guiAccess = GROUP_GUI_ACCESS_SYSTEM;
++				}else{
++					$guiAccess = $dbAccess['gui_access'];
++				}
++				$userData = $this->_getUserData($userInfo['userid']);
++				$userData['sessionid'] = $result;
++				$userData['gui_access'] = $guiAccess;
++				$userData['userid'] = $userInfo['userid'];
++				CWebUser::$data = self::$userData = $userData;
++				return isset($user['userData']) ? $userData : $userData['sessionid'];
++			}else{
++				self::exception(ZBX_API_ERROR_PARAMETERS, _('Login name or password is incorrect.'));
++			}
++		}else{
++			$userInfo = DBfetch(DBselect(
++				'SELECT u.userid,u.attempt_failed,u.attempt_clock,u.attempt_ip'.
++				' FROM users u'.
++				' WHERE u.alias='.zbx_dbstr($name)
++			));
++			if (!$userInfo) {
++				self::exception(ZBX_API_ERROR_PARAMETERS, _('Login name or password is incorrect.'));
++			}
++
++			// check if user is blocked
++			if ($userInfo['attempt_failed'] >= ZBX_LOGIN_ATTEMPTS) {
++				if ((time() - $userInfo['attempt_clock']) < ZBX_LOGIN_BLOCK) {
++					self::exception(ZBX_API_ERROR_PARAMETERS, _s('Account is blocked for %s seconds', (ZBX_LOGIN_BLOCK - (time() - $userInfo['attempt_clock']))));
++				}
+
+-		// check if user is blocked
+-		if ($userInfo['attempt_failed'] >= ZBX_LOGIN_ATTEMPTS) {
+-			if ((time() - $userInfo['attempt_clock']) < ZBX_LOGIN_BLOCK) {
+-				self::exception(ZBX_API_ERROR_PARAMETERS, _s('Account is blocked for %s seconds', (ZBX_LOGIN_BLOCK - (time() - $userInfo['attempt_clock']))));
++				DBexecute('UPDATE users SET attempt_clock='.time().' WHERE alias='.zbx_dbstr($name));
+ 			}
+
+-			DBexecute('UPDATE users SET attempt_clock='.time().' WHERE alias='.zbx_dbstr($name));
+-		}
++			// check system permissions
++			if (!check_perm2system($userInfo['userid'])) {
++				self::exception(ZBX_API_ERROR_PARAMETERS, _('No permissions for system access.'));
++			}
+
+-		// check system permissions
+-		if (!check_perm2system($userInfo['userid'])) {
+-			self::exception(ZBX_API_ERROR_PARAMETERS, _('No permissions for system access.'));
+-		}
++			$dbAccess = DBfetch(DBselect(
++				'SELECT MAX(g.gui_access) AS gui_access'.
++				' FROM usrgrp g,users_groups ug'.
++				' WHERE ug.userid='.zbx_dbstr($userInfo['userid']).
++					' AND g.usrgrpid=ug.usrgrpid'
++			));
+
+-		$dbAccess = DBfetch(DBselect(
+-			'SELECT MAX(g.gui_access) AS gui_access'.
+-			' FROM usrgrp g,users_groups ug'.
+-			' WHERE ug.userid='.zbx_dbstr($userInfo['userid']).
+-				' AND g.usrgrpid=ug.usrgrpid'
+-		));
++			if (zbx_empty($dbAccess['gui_access'])) {
++				$guiAccess = GROUP_GUI_ACCESS_SYSTEM;
++			}
++			else {
++				$guiAccess = $dbAccess['gui_access'];
++			}
+
+-		if (zbx_empty($dbAccess['gui_access'])) {
+-			$guiAccess = GROUP_GUI_ACCESS_SYSTEM;
+-		}
+-		else {
+-			$guiAccess = $dbAccess['gui_access'];
+-		}
++			$config = select_config();
++			$authType = $config['authentication_type'];
+
+-		$config = select_config();
+-		$authType = $config['authentication_type'];
++			switch ($guiAccess) {
++				case GROUP_GUI_ACCESS_INTERNAL:
++					$authType = ($authType == ZBX_AUTH_HTTP) ? ZBX_AUTH_HTTP : ZBX_AUTH_INTERNAL;
++					break;
++				case GROUP_GUI_ACCESS_DISABLED:
++					/* fall through */
++				case GROUP_GUI_ACCESS_SYSTEM:
++					/* fall through */
++			}
+
+-		switch ($guiAccess) {
+-			case GROUP_GUI_ACCESS_INTERNAL:
+-				$authType = ($authType == ZBX_AUTH_HTTP) ? ZBX_AUTH_HTTP : ZBX_AUTH_INTERNAL;
+-				break;
+-			case GROUP_GUI_ACCESS_DISABLED:
+-				/* fall through */
+-			case GROUP_GUI_ACCESS_SYSTEM:
+-				/* fall through */
+-		}
+-
+-		if ($authType == ZBX_AUTH_HTTP) {
+-			// if PHP_AUTH_USER is not set, it means that HTTP authentication is not enabled
+-			if (!isset($_SERVER['PHP_AUTH_USER'])) {
+-				self::exception(ZBX_API_ERROR_PARAMETERS, _('Cannot login.'));
+-			}
+-			// check if the user name used when calling the API matches the one used for HTTP authentication
+-			elseif ($name !== $_SERVER['PHP_AUTH_USER']) {
+-				self::exception(ZBX_API_ERROR_PARAMETERS,
+-					_s('Login name "%1$s" does not match the name "%2$s" used to pass HTTP authentication.',
+-						$name, $_SERVER['PHP_AUTH_USER']
+-					)
+-				);
++			if ($authType == ZBX_AUTH_HTTP) {
++				// if PHP_AUTH_USER is not set, it means that HTTP authentication is not enabled
++				if (!isset($_SERVER['PHP_AUTH_USER'])) {
++					self::exception(ZBX_API_ERROR_PARAMETERS, _('Cannot login.'));
++				}
++				// check if the user name used when calling the API matches the one used for HTTP authentication
++				elseif ($name !== $_SERVER['PHP_AUTH_USER']) {
++					self::exception(ZBX_API_ERROR_PARAMETERS,
++						_s('Login name "%1$s" does not match the name "%2$s" used to pass HTTP authentication.',
++							$name, $_SERVER['PHP_AUTH_USER']
++						)
++					);
++				}
+ 			}
+-		}
+
+-		try {
+-			switch ($authType) {
+-				case ZBX_AUTH_LDAP:
+-					$this->ldapLogin($user);
+-					break;
+-				case ZBX_AUTH_INTERNAL:
+-					$this->dbLogin($user);
+-					break;
+-				case ZBX_AUTH_HTTP:
++			try {
++				switch ($authType) {
++					case ZBX_AUTH_LDAP:
++						$this->ldapLogin($user);
++						break;
++					case ZBX_AUTH_INTERNAL:
++						$this->dbLogin($user);
++						break;
++					case ZBX_AUTH_HTTP:
++				}
+ 			}
+-		}
+-		catch (APIException $e) {
+-			$ip = (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && !empty($_SERVER['HTTP_X_FORWARDED_FOR']))
+-					? $_SERVER['HTTP_X_FORWARDED_FOR']
+-					: $_SERVER['REMOTE_ADDR'];
+-			$userInfo['attempt_failed']++;
+-
+-			DBexecute(
+-				'UPDATE users'.
+-				' SET attempt_failed='.zbx_dbstr($userInfo['attempt_failed']).','.
+-					' attempt_clock='.time().','.
+-					' attempt_ip='.zbx_dbstr($ip).
+-				' WHERE userid='.zbx_dbstr($userInfo['userid'])
+-			);
++			catch (APIException $e) {
++				$ip = (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && !empty($_SERVER['HTTP_X_FORWARDED_FOR']))
++						? $_SERVER['HTTP_X_FORWARDED_FOR']
++						: $_SERVER['REMOTE_ADDR'];
++				$userInfo['attempt_failed']++;
+
+-			add_audit_details(AUDIT_ACTION_LOGIN, AUDIT_RESOURCE_USER, $userInfo['userid'], '',
+-				_s('Login failed "%s".', $name), $userInfo['userid']
+-			);
+-			self::exception(ZBX_API_ERROR_PARAMETERS, $e->getMessage());
+-		}
++				DBexecute(
++					'UPDATE users'.
++					' SET attempt_failed='.zbx_dbstr($userInfo['attempt_failed']).','.
++						' attempt_clock='.time().','.
++						' attempt_ip='.zbx_dbstr($ip).
++					' WHERE userid='.zbx_dbstr($userInfo['userid'])
++				);
+
+-		// start session
+-		$sessionid = md5(microtime().$password.$name.mt_rand());
+-		DBexecute('INSERT INTO sessions (sessionid,userid,lastaccess,status)'.
+-			' VALUES ('.zbx_dbstr($sessionid).','.zbx_dbstr($userInfo['userid']).','.time().','.ZBX_SESSION_ACTIVE.')'
+-		);
++				add_audit_details(AUDIT_ACTION_LOGIN, AUDIT_RESOURCE_USER, $userInfo['userid'], '',
++					_s('Login failed "%s".', $name), $userInfo['userid']
++				);
++				self::exception(ZBX_API_ERROR_PARAMETERS, $e->getMessage());
++			}
+
+-		$userData = $this->_getUserData($userInfo['userid']);
+-		$userData['sessionid'] = $sessionid;
+-		$userData['gui_access'] = $guiAccess;
+-		$userData['userid'] = $userInfo['userid'];
++			// start session
++			$sessionid = md5(microtime().$password.$name.mt_rand());
++			DBexecute('INSERT INTO sessions (sessionid,userid,lastaccess,status)'.
++				' VALUES ('.zbx_dbstr($sessionid).','.zbx_dbstr($userInfo['userid']).','.time().','.ZBX_SESSION_ACTIVE.')'
++			);
+
+-		if ($userInfo['attempt_failed']) {
+-			DBexecute('UPDATE users SET attempt_failed=0 WHERE userid='.zbx_dbstr($userInfo['userid']));
+-		}
++			$userData = $this->_getUserData($userInfo['userid']);
++			$userData['sessionid'] = $sessionid;
++			$userData['gui_access'] = $guiAccess;
++			$userData['userid'] = $userInfo['userid'];
+
+-		CWebUser::$data = self::$userData = $userData;
++			if ($userInfo['attempt_failed']) {
++				DBexecute('UPDATE users SET attempt_failed=0 WHERE userid='.zbx_dbstr($userInfo['userid']));
++			}
++
++			CWebUser::$data = self::$userData = $userData;
+
+-		return isset($user['userData']) ? $userData : $userData['sessionid'];
++			return isset($user['userData']) ? $userData : $userData['sessionid'];
++		}
+ 	}
+
+ 	/**
+@@ -1186,71 +1280,185 @@
+ 	 * @return array				an array of user data
+ 	 */
+ 	public function checkAuthentication(array $sessionid) {
+-		$sessionid = reset($sessionid);
++		$config=select_config();
++		if ($config['authentication_type'] == ZBX_AUTH_KEYCLOAK) {
++			$sessionid = reset($sessionid);
++			if (!is_null(self::$userData)) {
++				return self::$userData;
++			}
++			$time = time();  //millisecond since 1970.01.01
++
++			//1.GET TokenData OBJ based on sessionid.
++				//if errors happend with the token object, do the following things
++				//a.Delete the cookie on browser side.
++				//b.Delete the session table on zbx side.
++				//c.Return the empty Array...
++			if (PHP_SESSION_ACTIVE !== session_status()) {
++				session_start();
++			}
++			$client = CWebUser::getOAuth2client();
++			try {
++				$TokenObj = $client->getAccessToken($sessionid);
++				if (false == $TokenObj) {
++					//Token is not found based on cookie value,do the following things;
++					setcookie('zbx_sessionid',null,-99999);
++					unset($_COOKIE['zbx_sessionid']);
++					DBexecute('DELETE FROM sessions WHERE sessionid='.zbx_dbstr($sessionid));
++					return self::$userData = [];
++				}
++			}
++			catch(Exception $e){
++					setcookie('zbx_sessionid',null,-99999);
++					unset($_COOKIE['zbx_sessionid']);
++					DBexecute('DELETE FROM sessions WHERE sessionid='.zbx_dbstr($sessionid));
++					return self::$userData = [];
++			}
++			$dateTime = new DateTime();  //full date ...
++			if (true == $TokenObj->isExpired($dateTime)) {
++				if (null === $TokenObj->getRefreshToken()) {
++					setcookie('zbx_sessionid',null,-99999);
++					unset($_COOKIE['zbx_sessionid']);
++					DBexecute('DELETE FROM sessions WHERE sessionid='.zbx_dbstr($sessionid));
++					return self::$userData = [];
++				}
++				try{
++					$TokenObj= $client->refreshAccessToken($TokenObj,$sessionid);
++					if (false == $TokenObj) {
++						setcookie('zbx_sessionid',null,-99999);
++						unset($_COOKIE['zbx_sessionid']);
++						DBexecute('DELETE FROM sessions WHERE sessionid='.zbx_dbstr($sessionid));
++						return self::$userData = [];
++					}
++				}catch(Exception $e){
++						setcookie('zbx_sessionid',null,-99999);
++						unset($_COOKIE['zbx_sessionid']);
++						DBexecute('DELETE FROM sessions WHERE sessionid='.zbx_dbstr($sessionid));
++						return self::$userData = [];
++				}
++			}
++			session_write_close();
++			DBexecute('UPDATE users SET autologout='.zbx_dbstr($TokenObj->getRefreshExpiresIn()).' WHERE alias='.zbx_dbstr($TokenObj->getName()));
++			//2.GET userinfo based on sessionid
++			$userInfo = DBfetch(DBselect(
++				'SELECT u.userid,u.autologout,s.lastaccess'.
++				' FROM sessions s,users u'.
++				' WHERE s.sessionid='.zbx_dbstr($sessionid).
++						' AND s.status='.ZBX_SESSION_ACTIVE.
++						' AND s.userid=u.userid'.
++						' AND (s.lastaccess+u.autologout>'.$time.' OR u.autologout=0)'
++					));
++			if (!$userInfo) {
++				setcookie('zbx_sessionid',null,-99999);
++				unset($_COOKIE['zbx_sessionid']);
++				DBexecute('DELETE FROM sessions WHERE sessionid='.zbx_dbstr($sessionid));
++				return self::$userData = [];
++			}
++			//update session's time to latest which bind to acccess-token.
++			//Though the session have no affect on the authentication,but update it for the latent session-mechinism of zabbix.
++			if ($time != $userInfo['lastaccess']) {
++				if (!check_perm2system($userInfo['userid'])) {
++					self::exception(ZBX_API_ERROR_PARAMETERS, _('No permissions for system access.'));
++				}
+
+-		// access DB only once per page load
+-		if (!is_null(self::$userData)) {
+-			return self::$userData;
+-		}
+-
+-		$time = time();
+-
+-		$userInfo = DBfetch(DBselect(
+-			'SELECT u.userid,u.autologout,s.lastaccess'.
+-			' FROM sessions s,users u'.
+-			' WHERE s.sessionid='.zbx_dbstr($sessionid).
+-				' AND s.status='.ZBX_SESSION_ACTIVE.
+-				' AND s.userid=u.userid'.
+-				' AND (s.lastaccess+u.autologout>'.$time.' OR u.autologout=0)'
+-		));
++				if ($userInfo['autologout'] > 0) {
++					DBexecute(
++						'DELETE FROM sessions'.
++						' WHERE userid='.zbx_dbstr($userInfo['userid']).
++							' AND lastaccess<'.(time() - $userInfo['autologout'])
++					);
++				}
++				DBexecute(
++					'UPDATE sessions'.
++					' SET lastaccess='.time().
++					' WHERE userid='.zbx_dbstr($userInfo['userid']).
++						' AND sessionid='.zbx_dbstr($sessionid)
++				);
++			}
+
+-		if (!$userInfo) {
+-			self::exception(ZBX_API_ERROR_PARAMETERS, _('Session terminated, re-login, please.'));
+-		}
++			$dbAccess = DBfetch(DBselect(
++				'SELECT MAX(g.gui_access) AS gui_access'.
++				' FROM usrgrp g,users_groups ug'.
++				' WHERE ug.userid='.zbx_dbstr($userInfo['userid']).
++				' AND g.usrgrpid=ug.usrgrpid'
++			));
+
+-		// don't check permissions on the same second
+-		if ($time != $userInfo['lastaccess']) {
+-			if (!check_perm2system($userInfo['userid'])) {
+-				self::exception(ZBX_API_ERROR_PARAMETERS, _('No permissions for system access.'));
+-			}
++			if (!zbx_empty($dbAccess['gui_access'])) {
++				$guiAccess = $dbAccess['gui_access'];
++			}else{
++				$guiAccess = GROUP_GUI_ACCESS_SYSTEM;
++			}
++			$userData = $this->_getUserData($userInfo['userid']);
++			$userData['sessionid'] = $sessionid;
++			$userData['gui_access'] = $guiAccess;
++			CWebUser::$data = self::$userData = $userData;
++			return $userData;
++		}else{
++			$sessionid = reset($sessionid);
++
++			// access DB only once per page load
++			if (!is_null(self::$userData)) {
++				return self::$userData;
++			}
++
++			$time = time();
++
++			$userInfo = DBfetch(DBselect(
++				'SELECT u.userid,u.autologout,s.lastaccess'.
++				' FROM sessions s,users u'.
++				' WHERE s.sessionid='.zbx_dbstr($sessionid).
++					' AND s.status='.ZBX_SESSION_ACTIVE.
++					' AND s.userid=u.userid'.
++					' AND (s.lastaccess+u.autologout>'.$time.' OR u.autologout=0)'
++			));
++
++			if (!$userInfo) {
++				self::exception(ZBX_API_ERROR_PARAMETERS, _('Session terminated, re-login, please.'));
++			}
++
++			// don't check permissions on the same second
++			if ($time != $userInfo['lastaccess']) {
++				if (!check_perm2system($userInfo['userid'])) {
++					self::exception(ZBX_API_ERROR_PARAMETERS, _('No permissions for system access.'));
++				}
++
++				if ($userInfo['autologout'] > 0) {
++					DBexecute(
++						'DELETE FROM sessions'.
++						' WHERE userid='.zbx_dbstr($userInfo['userid']).
++							' AND lastaccess<'.(time() - $userInfo['autologout'])
++					);
++				}
+
+-			if ($userInfo['autologout'] > 0) {
+ 				DBexecute(
+-					'DELETE FROM sessions'.
++					'UPDATE sessions'.
++					' SET lastaccess='.time().
+ 					' WHERE userid='.zbx_dbstr($userInfo['userid']).
+-						' AND lastaccess<'.(time() - $userInfo['autologout'])
++						' AND sessionid='.zbx_dbstr($sessionid)
+ 				);
+ 			}
+
+-			DBexecute(
+-				'UPDATE sessions'.
+-				' SET lastaccess='.time().
+-				' WHERE userid='.zbx_dbstr($userInfo['userid']).
+-					' AND sessionid='.zbx_dbstr($sessionid)
+-			);
+-		}
++			$dbAccess = DBfetch(DBselect(
++				'SELECT MAX(g.gui_access) AS gui_access'.
++				' FROM usrgrp g,users_groups ug'.
++				' WHERE ug.userid='.zbx_dbstr($userInfo['userid']).
++					' AND g.usrgrpid=ug.usrgrpid'
++			));
+
+-		$dbAccess = DBfetch(DBselect(
+-			'SELECT MAX(g.gui_access) AS gui_access'.
+-			' FROM usrgrp g,users_groups ug'.
+-			' WHERE ug.userid='.zbx_dbstr($userInfo['userid']).
+-				' AND g.usrgrpid=ug.usrgrpid'
+-		));
+-
+-		if (!zbx_empty($dbAccess['gui_access'])) {
+-			$guiAccess = $dbAccess['gui_access'];
+-		}
+-		else {
+-			$guiAccess = GROUP_GUI_ACCESS_SYSTEM;
+-		}
++			if (!zbx_empty($dbAccess['gui_access'])) {
++				$guiAccess = $dbAccess['gui_access'];
++			}
++			else {
++				$guiAccess = GROUP_GUI_ACCESS_SYSTEM;
++			}
+
+-		$userData = $this->_getUserData($userInfo['userid']);
+-		$userData['sessionid'] = $sessionid;
+-		$userData['gui_access'] = $guiAccess;
++			$userData = $this->_getUserData($userInfo['userid']);
++			$userData['sessionid'] = $sessionid;
++			$userData['gui_access'] = $guiAccess;
+
+-		CWebUser::$data = self::$userData = $userData;
++			CWebUser::$data = self::$userData = $userData;
+
+-		return $userData;
++			return $userData;
++		}
+ 	}
+
+ 	private function _getUserData($userid) {
+--- a/frontends/php/include/classes/core/CSession.php
++++ b/frontends/php/include/classes/core/CSession.php
+@@ -133,12 +133,19 @@
+ 	 * Open session for writing
+ 	 */
+ 	private static function open() {
+-		static $options = [];
+-
+-		session_start($options);
+-
+-		if (!$options) {
+-			$options = ['use_cookies' => 0];
++		if (PHP_SESSION_ACTIVE !== session_status()) {
++			static $options = [];
++			session_start($options);
++			if (!$options) {
++				$options = ['use_cookies' => 0];
++			}
++		}else{
++			self::close();
++			static $options = [];
++			session_start($options);
++			if (!$options) {
++				$options = ['use_cookies' => 0];
++			}
+ 		}
+ 	}
+
+--- a/frontends/php/include/classes/core/ZBase.php
++++ b/frontends/php/include/classes/core/ZBase.php
+@@ -114,6 +114,15 @@
+ 	}
+
+ 	/**
++	 * Initializes the application for Keycloak plugins.
++	 */
++	public function run4kc (){
++		$this->init();
++		$this->loadConfigFile();
++		$this->initDB();
++	}
++
++	/**
+ 	 * Initializes the application.
+ 	 */
+ 	public function run($mode) {
+--- a/frontends/php/include/classes/user/CWebUser.php
++++ b/frontends/php/include/classes/user/CWebUser.php
+@@ -17,7 +17,11 @@
+ ** along with this program; if not, write to the Free Software
+ ** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ **/
+-
++require_once realpath(dirname(__FILE__).'/../../..').'/vendor/autoload.php';
++use fkooman\OAuth\Client\Http\CurlHttpClient;
++use fkooman\OAuth\Client\OAuthClient4zk;
++use fkooman\OAuth\Client\Provider;
++use fkooman\OAuth\Client\zkTokenStorage;
+
+ class CWebUser {
+
+@@ -96,42 +100,58 @@
+ 	 * Log-out the current user.
+ 	 */
+ 	public static function logout() {
+-		self::$data['sessionid'] = self::getSessionCookie();
+-		self::$data = API::User()->logout([]);
+-		CSession::destroy();
+-		zbx_unsetcookie('zbx_sessionid');
++		$config = select_config();
++		if ($config['authentication_type'] == ZBX_AUTH_KEYCLOAK){
++			self::$data['sessionid'] = self::getSessionCookie();
++			self::$data = API::User()->logout([]);
++			// CLEAN cookie on Browser side
++			CSession::destroy();
++			zbx_unsetcookie('zbx_sessionid');
++		}else{
++			self::$data['sessionid'] = self::getSessionCookie();
++			self::$data = API::User()->logout([]);
++			CSession::destroy();
++			zbx_unsetcookie('zbx_sessionid');
++
++		}
++
+ 	}
+
+ 	public static function checkAuthentication($sessionId) {
+ 		try {
++			$config = select_config();
+ 			if ($sessionId !== null) {
+ 				self::$data = API::User()->checkAuthentication([$sessionId]);
+ 			}
+-
+ 			if ($sessionId === null || empty(self::$data)) {
+-				self::setDefault();
+-				self::$data = API::User()->login([
+-					'user' => ZBX_GUEST_USER,
+-					'password' => '',
+-					'userData' => true
+-				]);
+-
+-				if (empty(self::$data)) {
+-					clear_messages(1);
+-					throw new Exception();
++				if ($config['authentication_type'] == ZBX_AUTH_KEYCLOAK) {
++					self::$data = CUser::keycloakWebLogin();
++				}else{
++					self::setDefault();
++					self::$data = API::User()->login([
++						'user' => ZBX_GUEST_USER,
++						'password' => '',
++						'userData' => true
++					]);
++
++					if (empty(self::$data)) {
++						clear_messages(1);
++						throw new Exception();
++					}
++					$sessionId = self::$data['sessionid'];
++					}
+ 				}
+-				$sessionId = self::$data['sessionid'];
+-			}
+
+ 			if (self::$data['gui_access'] == GROUP_GUI_ACCESS_DISABLED) {
+ 				throw new Exception();
+ 			}
+-
+-			if (self::$set_cookie) {
+-				self::setSessionCookie($sessionId);
+-			}
+-			else {
+-				self::$set_cookie = true;
++			if ($config['authentication_type'] != ZBX_AUTH_KEYCLOAK) {
++				if (self::$set_cookie) {
++					self::setSessionCookie($sessionId);
++				}
++				else {
++					self::$set_cookie = true;
++				}
+ 			}
+
+ 			return $sessionId;
+@@ -209,4 +229,32 @@
+ 	public static function isGuest() {
+ 		return (self::$data['alias'] == ZBX_GUEST_USER);
+ 	}
++
++	/**
++	 * The following function are designed for oauth2-clien....
++	 * get a OAuth2 Client Object.
++	 * @param none
++	 * @return object
++	 **/
++	public static function getOAuth2client(){
++		// This client Obj should not be re-used by $SESSION Array to keep only one obj in zabbix
++		// Because the client should get the Auth time on every new actions
++		// Disable this $client = $_SESSION['zbx_oauth2_client_obj'];
++		$config=select_config();
++		$userId = 'zbx';
++		$auth_uri = $config['keycloak_auth_url'];
++		$realm = $config['keycloak_realm'];
++		$client_id = $config['keycloak_client_id'];
++		$client_secret = $config['keycloak_client_secret'];
++		#--------
++		$authorization_uri = sprintf("%s/auth/realms/%s/protocol/openid-connect/auth",$auth_uri,$realm);
++		$token_uri = sprintf("%s/auth/realms/%s/protocol/openid-connect/token",$auth_uri,$realm);
++		$logout_uri = sprintf("%s/auth/realms/%s/protocol/openid-connect/logout",$auth_uri,$realm);
++		$client = new OAuthClient4zk(new zkTokenStorage(),new CurlHttpClient(['allowHttp' => true]));
++		$client->setProvider(new Provider($client_id,$client_secret,$authorization_uri,$token_uri,$logout_uri));
++		$client->setUserId($userId);
++		$_SESSION['zbx_oauth2_client_obj'] =  $client;
++		return $client;
++	}
++
+ }
+--- a/frontends/php/include/defines.inc.php
++++ b/frontends/php/include/defines.inc.php
+@@ -95,6 +95,8 @@
+ define('ZBX_AUTH_INTERNAL',	0);
+ define('ZBX_AUTH_LDAP',		1);
+ define('ZBX_AUTH_HTTP',		2);
++//keycloak
++define('ZBX_AUTH_KEYCLOAK',	3);
+
+ define('ZBX_DB_DB2',		'IBM_DB2');
+ define('ZBX_DB_MYSQL',		'MYSQL');
+--- a/frontends/php/include/menu.inc.php
++++ b/frontends/php/include/menu.inc.php
+@@ -311,6 +311,7 @@
+ 	$denied_page_requested = false;
+ 	$page_exists = false;
+ 	$deny = true;
++	$config = select_config();
+
+ 	foreach ($zbx_menu as $label => $menu) {
+ 		$show_menu = true;
+@@ -331,6 +332,8 @@
+ 			// show check
+ 			if (!isset($sub_page['label'])) {
+ 				$show_sub_menu = false;
++			}elseif($sub_page['label'] == "Users" && $config['authentication_type'] == ZBX_AUTH_KEYCLOAK ){
++				$show_sub_menu = false;
+ 			}
+ 			if (!isset($sub_page['user_type'])) {
+ 				$sub_page['user_type'] = $menu['user_type'];
+--- a/frontends/php/include/perm.inc.php
++++ b/frontends/php/include/perm.inc.php
+@@ -47,7 +47,9 @@
+ 	$authentications = [
+ 		ZBX_AUTH_INTERNAL => _('Zabbix internal authentication'),
+ 		ZBX_AUTH_LDAP => _('LDAP authentication'),
+-		ZBX_AUTH_HTTP => _('HTTP authentication')
++		ZBX_AUTH_HTTP => _('HTTP authentication'),
++		//keycloak
++		ZBX_AUTH_KEYCLOAK => _('Keycloak authentication')
+ 	];
+
+ 	return $authentications[$type];
+--- a/frontends/php/include/schema.inc.php
++++ b/frontends/php/include/schema.inc.php
+@@ -2400,6 +2400,38 @@
+ 				'length' => 128,
+ 				'default' => '',
+ 			],
++			//*keycloak
++			'keycloak_auth_url' => [
++				'null' => false,
++				'type' => DB::FIELD_TYPE_CHAR,
++				'length' => 255,
++				'default' => '',
++			],
++			'keycloak_realm' => [
++				'null' => false,
++				'type' => DB::FIELD_TYPE_CHAR,
++				'length' => 128,
++				'default' => '',
++			],
++			'keycloak_client_id' => [
++				'null' => false,
++				'type' => DB::FIELD_TYPE_CHAR,
++				'length' => 128,
++				'default' => '',
++			],
++			'keycloak_client_secret' => [
++				'null' => false,
++				'type' => DB::FIELD_TYPE_CHAR,
++				'length' => 255,
++				'default' => '',
++			],
++			'keycloak_user_name' => [
++				'null' => false,
++				'type' => DB::FIELD_TYPE_CHAR,
++				'length' => 128,
++				'default' => '',
++			],
++			//keycloak*
+ 			'dropdown_first_entry' => [
+ 				'null' => false,
+ 				'type' => DB::FIELD_TYPE_INT,
+--- a/frontends/php/include/views/administration.authentication.edit.php
++++ b/frontends/php/include/views/administration.authentication.edit.php
+@@ -18,7 +18,6 @@
+ ** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ **/
+
+-
+ $widget = (new CWidget())->setTitle(_('Authentication'));
+
+ // create form
+@@ -33,8 +32,21 @@
+ 		->addValue(_x('Internal', 'authentication'), ZBX_AUTH_INTERNAL, null, 'submit()')
+ 		->addValue(_('LDAP'), ZBX_AUTH_LDAP, null, 'submit()')
+ 		->addValue(_('HTTP'), ZBX_AUTH_HTTP, null, 'submit()')
++		//keycloak
++		->addValue(_('KEYCLOAK'), ZBX_AUTH_KEYCLOAK, null, 'submit()')
+ 		->setModern(true)
+ );
++//*keycloak
++// append KEYCLOAK fields to form list
++if ($this->data['keycloak_extension_enabled'] && $this->data['config']['authentication_type'] == ZBX_AUTH_KEYCLOAK) {
++	$authenticationFormList->addRow(_('Keycloak Auth URL'),(new CTextBox('keycloak_auth_url', $this->data['config']['keycloak_auth_url']))->setWidth(ZBX_TEXTAREA_STANDARD_WIDTH));
++	$authenticationFormList->addRow(_('Keycloak Realm'),(new CTextBox('keycloak_realm', $this->data['config']['keycloak_realm']))->setWidth(ZBX_TEXTAREA_SMALL_WIDTH));
++	$authenticationFormList->addRow(_('Keycloak Client ID'),(new CTextBox('keycloak_client_id', $this->data['config']['keycloak_client_id']))->setWidth(ZBX_TEXTAREA_SMALL_WIDTH));
++	$authenticationFormList->addRow(_('Keycloak Client Secret'),(new CTextBox('keycloak_client_secret', $this->data['config']['keycloak_client_secret']))->setWidth(ZBX_TEXTAREA_STANDARD_WIDTH));
++	$authenticationFormList->addRow(_('Keycloak Client Scope'),(new CTextBox('keycloak_client_scope', $this->data['config']['keycloak_client_scope']))->setWidth(ZBX_TEXTAREA_STANDARD_WIDTH));
++	// $authenticationFormList->addRow(_('Keycloak User Name'),(new CTextBox('keycloak_user_name', $this->data['config']['keycloak_user_name']))->setWidth(ZBX_TEXTAREA_STANDARD_WIDTH));
++}
++//keycloak*
+
+ // append LDAP fields to form list
+ if ($this->data['ldap_extension_enabled'] && $this->data['config']['authentication_type'] == ZBX_AUTH_LDAP) {
+@@ -107,7 +119,7 @@
+ $authenticationTab = new CTabView();
+ $authenticationTab->addTab('authenticationTab', $this->data['title'], $authenticationFormList);
+
+-// create save button
++// create UPDATE (save) button
+ $saveButton = new CSubmit('update', _('Update'));
+ if ($this->data['is_authentication_type_changed']) {
+ 	$saveButton->onClick('javascript: if (confirm('.
+@@ -115,19 +127,22 @@
+ 		'jQuery("#authenticationForm").submit(); return true; } else { return false; }'
+ 	);
+ }
+-elseif ($this->data['config']['authentication_type'] != ZBX_AUTH_LDAP) {
++elseif ($this->data['config']['authentication_type'] != ZBX_AUTH_LDAP && $this->data['config']['authentication_type'] != ZBX_AUTH_KEYCLOAK) {
+ 	$saveButton->setAttribute('disabled', 'true');
+ }
+
+-// LDAP test button.
++// LDAP and KEYCLOAK test button..
+ $test_button = new CSubmit('test', _('Test'));
+
+ if ($data['config']['authentication_type'] == ZBX_AUTH_LDAP) {
+ 	$test_button->setEnabled($data['ldap_extension_enabled']);
+ 	$saveButton->setEnabled($data['ldap_extension_enabled']);
+ 	$authenticationTab->setFooter(makeFormFooter($saveButton, [$test_button]));
+-}
+-else {
++}elseif ($data['config']['authentication_type'] == ZBX_AUTH_KEYCLOAK){
++	$test_button->setEnabled($data['keycloak_extension_enabled']);
++	$saveButton->setEnabled($data['keycloak_extension_enabled']);
++	$authenticationTab->setFooter(makeFormFooter($saveButton, [$test_button]));
++}else {
+ 	$authenticationTab->setFooter(makeFormFooter($saveButton));
+ }
+
+--- a/frontends/php/index.php
++++ b/frontends/php/index.php
+@@ -20,10 +20,9 @@
+
+
+ require_once dirname(__FILE__).'/include/classes/user/CWebUser.php';
+-CWebUser::disableSessionCookie();
+-
+ require_once dirname(__FILE__).'/include/config.inc.php';
+ require_once dirname(__FILE__).'/include/forms.inc.php';
++CWebUser::disableSessionCookie();
+
+ $page['title'] = _('ZABBIX');
+ $page['file'] = 'index.php';
+@@ -38,7 +37,10 @@
+ 	'autologin' =>	[T_ZBX_INT, O_OPT, null,	null,			null],
+ 	'request' =>	[T_ZBX_STR, O_OPT, null,	null,			null]
+ ];
+-check_fields($fields);
++$config = select_config();
++if ($config['authentication_type'] != ZBX_AUTH_KEYCLOAK){
++	check_fields($fields);
++}
+
+ // logout
+ if (isset($_REQUEST['reconnect'])) {
+@@ -51,7 +53,17 @@
+ 	redirect('index.php');
+ }
+
+-$config = select_config();
++// login via keycloak
++if ($config['authentication_type'] == ZBX_AUTH_KEYCLOAK) {
++	try{
++		$url = ZBX_DEFAULT_URL;
++		redirect($url);
++		exit;
++	}catch(Exception $e){
++		echo sprintf('ERROR: %s', $e->getMessage());
++		exit;
++	}
++}
+
+ if ($config['authentication_type'] == ZBX_AUTH_HTTP) {
+ 	if (!empty($_SERVER['PHP_AUTH_USER'])) {

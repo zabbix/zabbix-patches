@@ -1,0 +1,20 @@
+<?php
+
+return PhpCsFixer\Config::create()
+    ->setRiskyAllowed(true)
+    ->setRules(
+        [
+            '@Symfony' => true,
+            '@Symfony:risky' => true,
+            'ordered_imports' => true,
+            'ordered_class_elements' => true,
+            'array_syntax' => ['syntax' => 'short'],
+            'phpdoc_order' => true,
+            'phpdoc_no_empty_return' => false,
+            'phpdoc_add_missing_param_annotation' => true,
+            'strict_comparison' => true,
+            'strict_param' => true,
+            'php_unit_strict' => true,
+        ]
+    )
+    ->setFinder(PhpCsFixer\Finder::create()->in(__DIR__));

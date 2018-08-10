@@ -1,6 +1,0 @@
-48c48
-< 	protected function doAction() {
----
->     protected function doAction() {
-64d63
-< 
