@@ -48,3 +48,9 @@ id|type|details
 10|ltr|3
 10|extra|vendor vendor
 10|extra|index_callback.php index_callback.php
+
+11|name|ZBXNEXT-4897
+11|fly
+11|desc|Add config in rpmbuilding to enable relocate option during the rpms installation
+11|extra|zabbix.spec
+11|ltr|3
