@@ -1,0 +1,273 @@
+Last-Update: 2018-12-06
+Forwarded: not-needed
+Author: Yunong <yunong.lin@nokia.sbell.com>
+Description: This patch enable relocate option during rpm installation.
+
+The src file can be found at zabbix-3.0.19-1.el7.src.rpm
+The option is added during the rpmbuilding and add necessry steps in %post and %postun phaseto keep the arch intact.
+
+The new-built rpms include:
+zabbix-agent-3.0.19-1.redirect.el7.x86_64.rpm			
+zabbix-get-3.0.19-1.redirect.el7.x86_64.rpm			
+zabbix-java-gateway-3.0.19-1.redirect.el7.x86_64.rpm
+zabbix-sender-3.0.19-1.redirect.el7.x86_64.rpm		
+zabbix-server-mysql-3.0.19-1.redirect.el7.x86_64.rpm	
+zabbix-web-3.0.19-1.redirect.el7.noarch.rpm			
+zabbix-web-mysql-3.0.19-1.redirect.el7.noarch.rpm	
+
+Zabbix reference links:
+    JIRA : https://support.zabbix.com/browse/ZBXNEXT-4897
+
+--- zabbix.spec
++++ zabbix.spec
+
+
+1d0
+< 
+4c3
+< Release:	%{?alphatag:0.}1%{?alphatag}.redirect%{?dist}
+---
+> Release:	%{?alphatag:0.}1%{?alphatag}%{?dist}
+27,33d25
+< 
+< Prefix:  /etc 
+< Prefix:  /usr/bin 
+< Prefix:  /usr/sbin 
+< Prefix:  /usr/share 
+< Prefix:  /var 
+< 
+249,250c241,242
+< Requires(post):		/usr/sbin/update-alternatives
+< Requires(preun):	/usr/sbin/update-alternatives
+---
+> Requires(post):		%{_sbindir}/update-alternatives
+> Requires(preun):	%{_sbindir}/update-alternatives
+287,288c279,280
+< Requires(post):		/usr/sbin/update-alternatives
+< Requires(preun):	/usr/sbin/update-alternatives
+---
+> Requires(post):		%{_sbindir}/update-alternatives
+> Requires(preun):	%{_sbindir}/update-alternatives
+346,347d337
+< 	--prefix=/usr
+< 	--exec_prefix=/usr
+349,354d338
+< 	--bindir=/usr/bin
+< 	--sbindir=/usr/sbin
+< 	--localstatedir=/var
+< 	--docdir=/usr/share/doc
+< 	--datadir=/usr/share
+< 	--mandir=/usr/share/man
+415d398
+< mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/zabbix/
+565,583d547
+< ###<
+< 
+< #service file
+< if [ -f "/usr/lib/systemd/system/zabbix-agent.service" ];then
+< sed -i "s!Environment=\".*!Environment=\"CONFFILE=$RPM_INSTALL_PREFIX0/zabbix/zabbix_agentd.conf\"!g" /usr/lib/systemd/system/zabbix-agent.service
+< sed -i "s!ExecStart=.*!ExecStart=$RPM_INSTALL_PREFIX2/zabbix_agentd -c \$CONFFILE!g" /usr/lib/systemd/system/zabbix-agent.service
+< sed -i "s!PIDFile=.*!PIDFile=$RPM_INSTALL_PREFIX4/run/zabbix/zabbix_agentd.pid!g" /usr/lib/systemd/system/zabbix-agent.service
+< sed -i "/^RestartSec=10s/d" /usr/lib/systemd/system/zabbix-agent.service
+< systemctl daemon-reload
+< fi
+< # config file
+< sed -i "s!^PidFile=.*!PidFile=$RPM_INSTALL_PREFIX4/run/zabbix/zabbix_agentd.pid!g" $RPM_INSTALL_PREFIX0/zabbix/zabbix_agentd.conf
+< sed -i "s!^LogFile=.*!LogFile=$RPM_INSTALL_PREFIX4/log/zabbix/zabbix_agentd.log!g" $RPM_INSTALL_PREFIX0/zabbix/zabbix_agentd.conf
+< sed -i "s!^Include=.*!Include=$RPM_INSTALL_PREFIX0/zabbix/zabbix_agentd.d/!g" $RPM_INSTALL_PREFIX0/zabbix/zabbix_agentd.conf
+< # log config
+< if [ -d "$RPM_INSTALL_PREFIX0/logrotate.d/" ];then
+< cp -r $RPM_INSTALL_PREFIX0/logrotate.d/* /etc/logrotate.d/
+< fi
+< ###>
+592c556
+< 	useradd -r -g zabbix -d $RPM_INSTALL_PREFIX4/lib/zabbix -s /sbin/nologin \
+---
+> 	useradd -r -g zabbix -d %{_localstatedir}/lib/zabbix -s /sbin/nologin \
+599c563
+< 	useradd -r -g zabbix -d $RPM_INSTALL_PREFIX4/lib/zabbix -s /sbin/nologin \
+---
+> 	useradd -r -g zabbix -d %{_localstatedir}/lib/zabbix -s /sbin/nologin \
+606c570
+< 	useradd -r -g zabbix -d $RPM_INSTALL_PREFIX4/lib/zabbix -s /sbin/nologin \
+---
+> 	useradd -r -g zabbix -d %{_localstatedir}/lib/zabbix -s /sbin/nologin \
+613c577
+< 	useradd -r -g zabbix -d $RPM_INSTALL_PREFIX4/lib/zabbix -s /sbin/nologin \
+---
+> 	useradd -r -g zabbix -d %{_localstatedir}/lib/zabbix -s /sbin/nologin \
+621c585
+< 	useradd -r -g zabbix -d $RPM_INSTALL_PREFIX4/lib/zabbix -s /sbin/nologin \
+---
+> 	useradd -r -g zabbix -d %{_localstatedir}/lib/zabbix -s /sbin/nologin \
+628c592
+< 	useradd -r -g zabbix -d $RPM_INSTALL_PREFIX4/lib/zabbix -s /sbin/nologin \
+---
+> 	useradd -r -g zabbix -d %{_localstatedir}/lib/zabbix -s /sbin/nologin \
+640,641c604,605
+< /usr/sbin/update-alternatives --install $RPM_INSTALL_PREFIX2/zabbix_proxy \
+< 	zabbix-proxy $RPM_INSTALL_PREFIX2/zabbix_proxy_mysql 10
+---
+> /usr/sbin/update-alternatives --install %{_sbindir}/zabbix_proxy \
+> 	zabbix-proxy %{_sbindir}/zabbix_proxy_mysql 10
+650,651c614,615
+< /usr/sbin/update-alternatives --install $RPM_INSTALL_PREFIX2/zabbix_proxy \
+< 	zabbix-proxy $RPM_INSTALL_PREFIX2/zabbix_proxy_pgsql 10
+---
+> /usr/sbin/update-alternatives --install %{_sbindir}/zabbix_proxy \
+> 	zabbix-proxy %{_sbindir}/zabbix_proxy_pgsql 10
+660,661c624,625
+< /usr/sbin/update-alternatives --install $RPM_INSTALL_PREFIX2/zabbix_proxy \
+< 	zabbix-proxy $RPM_INSTALL_PREFIX2/zabbix_proxy_sqlite3 10
+---
+> /usr/sbin/update-alternatives --install %{_sbindir}/zabbix_proxy \
+> 	zabbix-proxy %{_sbindir}/zabbix_proxy_sqlite3 10
+666,681d629
+< ###<
+< echo ${_sbindir} >> /root/build.log
+< if [ -f "/usr/lib/systemd/system/zabbix-java-gateway.service" ];then
+< # service file
+< sed -i "s!ExecStart=.*!ExecStart=$RPM_INSTALL_PREFIX2/zabbix_java_gateway!g" /usr/lib/systemd/system/zabbix-java-gateway.service
+< sed -i "s!PIDFile=.*!PIDFile=$RPM_INSTALL_PREFIX4/run/zabbix/zabbix_java.pid!g" /usr/lib/systemd/system/zabbix-java-gateway.service
+< systemctl daemon-reload
+< fi
+< # config file
+< sed -i "s!PID_FILE=\".*!PID_FILE=\"$RPM_INSTALL_PREFIX4/run/zabbix/zabbix_java.pid\"!g" $RPM_INSTALL_PREFIX0/zabbix/zabbix_java_gateway.conf
+< sed -i "s!\ *<file>.*!<file>$RPM_INSTALL_PREFIX4/log/zabbix/zabbix_java_gateway.log</file>!g" $RPM_INSTALL_PREFIX0/zabbix/zabbix_java_gateway_logback.xml
+< # exec file
+< sed -i "s!/etc/zabbix/zabbix_java_gateway.conf!$RPM_INSTALL_PREFIX0/zabbix/zabbix_java_gateway.conf!g" $RPM_INSTALL_PREFIX2/zabbix_java_gateway
+< sed -i "s!/etc/zabbix/zabbix_java_gateway_logback.xml!$RPM_INSTALL_PREFIX0/zabbix/zabbix_java_gateway_logback.xml!g" $RPM_INSTALL_PREFIX2/zabbix_java_gateway
+< sed -i "s!\ *GATEWAY_HOME=\"/usr/share/zabbix-java-gateway\"!GATEWAY_HOME=\"$RPM_INSTALL_PREFIX3/zabbix-java-gateway\"!g" $RPM_INSTALL_PREFIX2/zabbix_java_gateway
+< ###>
+691,707d638
+< ###<
+< # service file
+< if [ -f "/usr/lib/systemd/system/zabbix-server.service" ];then
+< sed -i "s!Environment=\".*!Environment=\"CONFFILE=$RPM_INSTALL_PREFIX0/zabbix/zabbix_server.conf\"!g" /usr/lib/systemd/system/zabbix-server.service
+< sed -i "s!ExecStart=.*!ExecStart=$RPM_INSTALL_PREFIX2/zabbix_server_mysql -c \$CONFFILE!g" /usr/lib/systemd/system/zabbix-server.service
+< sed -i "s!PIDFile=.*!PIDFile=$RPM_INSTALL_PREFIX4/run/zabbix/zabbix_server.pid!g" /usr/lib/systemd/system/zabbix-server.service
+< sed -i "/^RestartSec=10s/d" /usr/lib/systemd/system/zabbix-server.service
+< systemctl daemon-reload
+< fi
+< # config file
+< sed -i "s!^PidFile=.*!PidFile=$RPM_INSTALL_PREFIX4/run/zabbix/zabbix_server.pid!g" $RPM_INSTALL_PREFIX0/zabbix/zabbix_server.conf
+< sed -i "s!^LogFile=.*!LogFile=$RPM_INSTALL_PREFIX4/log/zabbix/zabbix_server.log!g" $RPM_INSTALL_PREFIX0/zabbix/zabbix_server.conf
+< # log config
+< if [ -d "$RPM_INSTALL_PREFIX0/logrotate.d/" ];then
+< cp -r $RPM_INSTALL_PREFIX0/logrotate.d/ /etc/
+< fi
+< ###>
+719,735d649
+< ###<
+< # service file
+< if [ -f "/usr/lib/systemd/system/zabbix-server.service" ];then
+< sed -i "s!Environment=\".*!Environment=\"CONFFILE=$RPM_INSTALL_PREFIX0/zabbix/zabbix_server.conf\"!g" /usr/lib/systemd/system/zabbix-server.service
+< sed -i "s!ExecStart=.*!ExecStart=$RPM_INSTALL_PREFIX2/zabbix_server_mysql -c \$CONFFILE!g" /usr/lib/systemd/system/zabbix-server.service
+< sed -i "s!PIDFile=.*!PIDFile=$RPM_INSTALL_PREFIX4/run/zabbix/zabbix_server.pid!g" /usr/lib/systemd/system/zabbix-server.service
+< sed -i "/^RestartSec=10s/d" /usr/lib/systemd/system/zabbix-server.service
+< systemctl daemon-reload
+< fi
+< # config file
+< sed -i "s!^PidFile=.*!PidFile=$RPM_INSTALL_PREFIX4/run/zabbix/zabbix_server.pid!g" $RPM_INSTALL_PREFIX0/zabbix/zabbix_server.conf
+< sed -i "s!^LogFile=.*!LogFile=$RPM_INSTALL_PREFIX4/log/zabbix/zabbix_server.log!g" $RPM_INSTALL_PREFIX0/zabbix/zabbix_server.conf
+< # log config
+< if [ -d "$RPM_INSTALL_PREFIX0/logrotate.d/" ];then
+< cp -r $RPM_INSTALL_PREFIX0/logrotate.d/ /etc/
+< fi
+< ###>
+744,765c658,659
+< mkdir -p /usr/share/zabbix/fonts/
+< /usr/sbin/update-alternatives --install /usr/share/zabbix/fonts/graphfont.ttf \
+< 	zabbix-web-font /usr/share/fonts/dejavu/DejaVuSans.ttf 10
+< if [ ! -h "$RPM_INSTALL_PREFIX3/zabbix/fonts/graphfont.ttf" ];then
+< ln -s /usr/share/zabbix/fonts/graphfont.ttf $RPM_INSTALL_PREFIX3/zabbix/fonts/graphfont.ttf
+< fi
+< 
+< 
+< ###<
+< # config httpd
+< cp -f $RPM_INSTALL_PREFIX0/httpd/conf.d/zabbix.conf  /etc/httpd/conf.d/zabbix.conf
+< sed -i "5c Alias /zabbix $RPM_INSTALL_PREFIX3/zabbix" /etc/httpd/conf.d/zabbix.conf
+< sed -i "7c \<Directory \"$RPM_INSTALL_PREFIX3/zabbix\"\>" /etc/httpd/conf.d/zabbix.conf
+< sed -i "23c \<Directory \"$RPM_INSTALL_PREFIX3/zabbix/conf\"\>" /etc/httpd/conf.d/zabbix.conf
+< sed -i "27c \<Directory \"$RPM_INSTALL_PREFIX3/zabbix/app\"\>" /etc/httpd/conf.d/zabbix.conf
+< sed -i "31c \<Directory \"$RPM_INSTALL_PREFIX3/zabbix/include\"\>" /etc/httpd/conf.d/zabbix.conf
+< sed -i "35c \<Directory \"$RPM_INSTALL_PREFIX3/zabbix/local\"\>" /etc/httpd/conf.d/zabbix.conf
+< 
+< # update pages
+< sed -i "s!\ *const CONFIG_FILE_PATH = '/etc/zabbix/web/zabbix.conf.php'!const CONFIG_FILE_PATH = '$RPM_INSTALL_PREFIX0/zabbix/web/zabbix.conf.php'!g" $RPM_INSTALL_PREFIX3/zabbix/include/classes/core/CConfigFile.php
+< sed -i "s!\ *require_once '/etc/zabbix/web/maintenance.inc.php'!require_once '$RPM_INSTALL_PREFIX0/zabbix/web/maintenance.inc.php'!g" $RPM_INSTALL_PREFIX3/zabbix/include/classes/core/ZBase.php
+< ###>
+---
+> /usr/sbin/update-alternatives --install %{_datadir}/zabbix/fonts/graphfont.ttf \
+> 	zabbix-web-font %{_datadir}/fonts/dejavu/DejaVuSans.ttf 10
+769,797c663,664
+< mkdir -p /usr/share/zabbix/fonts/
+< /usr/sbin/update-alternatives --install /usr/share/zabbix/fonts/graphfont.ttf \
+< 	zabbix-web-font /usr/share/fonts/vlgothic/VL-PGothic-Regular.ttf 20
+< mv /usr/share/zabbix/fonts/graphfont.ttf $RPM_INSTALL_PREFIX3/zabbix/fonts/graphfont.ttf
+< ###<
+< # config httpd
+< sed -i "5c Alias /zabbix $RPM_INSTALL_PREFIX3/zabbix" $RPM_INSTALL_PREFIX0/httpd/conf.d/zabbix.conf
+< sed -i "7c \<Directory \"$RPM_INSTALL_PREFIX3/zabbix\"\>" $RPM_INSTALL_PREFIX0/httpd/conf.d/zabbix.conf
+< sed -i "24c \<Directory \"$RPM_INSTALL_PREFIX3/zabbix/conf\"\>" $RPM_INSTALL_PREFIX0/httpd/conf.d/zabbix.conf
+< sed -i "28c \<Directory \"$RPM_INSTALL_PREFIX3/zabbix/app\"\>" $RPM_INSTALL_PREFIX0/httpd/conf.d/zabbix.conf
+< sed -i "32c \<Directory \"$RPM_INSTALL_PREFIX3/zabbix/include\"\>" $RPM_INSTALL_PREFIX0/httpd/conf.d/zabbix.conf
+< sed -i "36c \<Directory \"$RPM_INSTALL_PREFIX3/zabbix/local\"\>" $RPM_INSTALL_PREFIX0/httpd/conf.d/zabbix.conf
+< mv -f $RPM_INSTALL_PREFIX0/httpd/conf.d/zabbix.conf  /etc/httpd/conf.d/zabbix.conf 
+< 
+< # update pages
+< sed -i "s!\ *const CONFIG_FILE_PATH = '/etc/zabbix/web/zabbix.conf.php'!const CONFIG_FILE_PATH = '$RPM_INSTALL_PREFIX0/zabbix/web/zabbix.conf.php'!g" $RPM_INSTALL_PREFIX3/zabbix/include/classes/core/CConfigFile.php
+< sed -i "s!\ *require_once '/etc/zabbix/web/maintenance.inc.php'!require_once '$RPM_INSTALL_PREFIX0/zabbix/web/maintenance.inc.php'!g" $RPM_INSTALL_PREFIX3/zabbix/include/classes/core/ZBase.php
+< ###>
+< :
+< 
+< %post sender
+< if [ ! -h "/usr/bin/zabbix_sender" ];then
+< ln -s $RPM_INSTALL_PREFIX1/zabbix_sender /usr/bin/zabbix_sender
+< fi
+< :
+< %post get
+< if [ ! -h "/usr/bin/zabbix_get" ];then
+< ln -s $RPM_INSTALL_PREFIX1/zabbix_get /usr/bin/zabbix_get
+< fi
+---
+> /usr/sbin/update-alternatives --install %{_datadir}/zabbix/fonts/graphfont.ttf \
+> 	zabbix-web-font %{_datadir}/fonts/vlgothic/VL-PGothic-Regular.ttf 20
+799d665
+< 
+823c689
+< $RPM_INSTALL_PREFIX2/zabbix_proxy_mysql
+---
+> %{_sbindir}/zabbix_proxy_mysql
+836c702
+< 	$RPM_INSTALL_PREFIX2/zabbix_proxy_pgsql
+---
+> 	%{_sbindir}/zabbix_proxy_pgsql
+849c715
+< 	$RPM_INSTALL_PREFIX2/zabbix_proxy_sqlite3
+---
+> 	%{_sbindir}/zabbix_proxy_sqlite3
+874c740
+< 	$RPM_INSTALL_PREFIX2/zabbix_server_mysql
+---
+> 	%{_sbindir}/zabbix_server_mysql
+887c753
+< 	$RPM_INSTALL_PREFIX2/zabbix_server_pgsql
+---
+> 	%{_sbindir}/zabbix_server_pgsql
+894c760
+< 	/usr/share/fonts/dejavu/DejaVuSans.ttf
+---
+> 	%{_datadir}/fonts/dejavu/DejaVuSans.ttf
+901c767
+< 	/usr/share/fonts/vlgothic/VL-PGothic-Regular.ttf
+---
+> 	%{_datadir}/fonts/vlgothic/VL-PGothic-Regular.ttf
+969,973d834
+< 
+< %postun web-mysql
+< rm /etc/httpd/conf.d/zabbix.conf 
+< 
+< 
+
