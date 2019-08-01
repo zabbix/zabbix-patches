@@ -1,0 +1,14 @@
+diff --git a/src/zabbix_server/poller/checks_agent.c b/src/zabbix_server/poller/checks_agent.c
+index f756d6515f..a28045be40 100644
+--- a/src/zabbix_server/poller/checks_agent.c
++++ b/src/zabbix_server/poller/checks_agent.c
+@@ -100,8 +100,7 @@ int	get_value_agent(DC_ITEM *item, AGENT_RESULT *result)
+ 		buffer = zbx_dsprintf(buffer, "%s\n", item->key);
+ 		zabbix_log(LOG_LEVEL_DEBUG, "Sending [%s]", buffer);
+ 
+-		/* send requests using old protocol */
+-		if (SUCCEED != zbx_tcp_send_raw(&s, buffer))
++		if (SUCCEED != zbx_tcp_send(&s, buffer))
+ 			ret = NETWORK_ERROR;
+ 		else if (FAIL != (received_len = zbx_tcp_recv_ext(&s, ZBX_TCP_READ_UNTIL_CLOSE, 0)))
+ 			ret = SUCCEED;
