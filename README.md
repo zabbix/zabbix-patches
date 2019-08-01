@@ -51,6 +51,8 @@ Please, vote for ZBXNEXT you're using or just care about - that could help to so
 
 [ZBX-5470](https://support.zabbix.com/browse/ZBX-5470): Add template_id in "Template cannot be linked to another template" exception
 
+[ZBX-16137](https://support.zabbix.com/browse/ZBX-16137): Fixed Zabbix server and Zabbix proxy to work with newer agent
+
 ### Zabbix 3.2
 
 [ZBXNEXT-543](https://support.zabbix.com/browse/ZBXNEXT-543): Adds an option to clear items and triggers while using hosts and templates window on template page.
