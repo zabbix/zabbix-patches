@@ -48,3 +48,8 @@ id|type|details
 10|ltr|3
 10|extra|vendor vendor
 10|extra|index_callback.php index_callback.php
+
+11|name|ZBX-16137
+11|f|y
+11|desc|Fixed Zabbix server and Zabbix proxy to work with newer agent
+11|ltr|3
