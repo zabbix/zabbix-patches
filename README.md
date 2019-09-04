@@ -105,6 +105,14 @@ Please, vote for ZBXNEXT you're using or just care about - that could help to so
 
 [ZBX-12423](https://support.zabbix.com/browse/ZBX-12423): Improve WEB UI - Show Server Name instead of server in the right corner of UI.
 
+### Zabbix **4.2**
+
+[ZBX-12423](https://support.zabbix.com/browse/ZBX-12423): Improve WEB UI - Show Server Name instead of server in the right corner of UI.
+
+### Zabbix **4.4**
+
+[ZBX-12423](https://support.zabbix.com/browse/ZBX-12423): Improve WEB UI - Show Server Name instead of server in the right corner of UI.
+
 ### Zabbix **manual_patches**
 
 [ZBXNEXT-4897](https://support.zabbix.com/browse/ZBXNEXT-4897): Add prefix option in zabbix.spec file, so after rpmbuilding with the file, 'relocate' option is enabled during rpm installation for customized installing path
