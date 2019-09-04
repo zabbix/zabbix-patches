@@ -1,17 +1,13 @@
-Last-Update: 2018-02-06
-Forwarded: not-needed
-Author: Areg Vrtanesyan (vrtareg@gmail.com)
-Description: Improve WEB UI - Show Server Name instead of server in the right corner of UI.
-
---- a/frontends/php/include/blocks.inc.php	2018-02-06 11:33:59.000000000 +0000
-+++ b/frontends/php/include/blocks.inc.php	2018-02-06 11:29:54.216811305 +0000
-@@ -405,9 +405,9 @@
-
+diff -aur a/frontends/php/include/blocks.inc.php b/frontends/php/include/blocks.inc.php
+--- a/frontends/php/include/blocks.inc.php	2019-09-04 01:51:47.000000000 +0100
++++ b/frontends/php/include/blocks.inc.php	2019-09-04 16:42:28.271546825 +0100
+@@ -415,9 +415,9 @@
+ 
  function make_status_of_zbx() {
  	if (CWebUser::getType() == USER_TYPE_SUPER_ADMIN) {
 -		global $ZBX_SERVER, $ZBX_SERVER_PORT;
 +		global $ZBX_SERVER, $ZBX_SERVER_NAME, $ZBX_SERVER_PORT;
-
+ 
 -		$server_details = $ZBX_SERVER.':'.$ZBX_SERVER_PORT;
 +		$server_details = $ZBX_SERVER_NAME.':'.$ZBX_SERVER_PORT;
  	}
