@@ -3,9 +3,9 @@ Forwarded: not-needed
 Author: Areg Vrtanesyan (vrtareg@gmail.com)
 Description: Improve WEB UI - Show Server Name instead of server in the right corner of UI.
 
---- a/frontends/php/include/blocks.inc.php	2019-09-04 01:51:40.000000000 +0100
-+++ b/frontends/php/include/blocks.inc.php	2019-09-04 16:42:14.599561005 +0100
-@@ -415,9 +415,9 @@
+--- a/frontends/php/include/blocks.inc.php	2019-09-04 14:54:44.000000000 +0100
++++ b/frontends/php/include/blocks.inc.php	2019-09-04 16:42:36.815537961 +0100
+@@ -599,9 +599,9 @@
  
  function make_status_of_zbx() {
  	if (CWebUser::getType() == USER_TYPE_SUPER_ADMIN) {
