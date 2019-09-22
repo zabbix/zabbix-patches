@@ -1,0 +1,355 @@
+diff -ruaN a/zabbix-4.2.6/build/win32/project/dummy_desc.h b/zabbix-4.2.6/build/win32/project/dummy_desc.h
+--- a/zabbix-4.2.6/build/win32/project/dummy_desc.h	1970-01-01 01:00:00.000000000 +0100
++++ b/zabbix-4.2.6/build/win32/project/dummy_desc.h	2019-09-22 16:52:21.116363800 +0200
+@@ -0,0 +1,6 @@
++#ifndef _DUMMY_DESC_H_
++#define _DUMMY_DESC_H_
++
++#define VER_FILEDESCRIPTION_STR		"dummy.dll"
++
++#endif
+diff -ruaN a/zabbix-4.2.6/build/win32/project/Makefile b/zabbix-4.2.6/build/win32/project/Makefile
+--- a/zabbix-4.2.6/build/win32/project/Makefile	2019-08-26 16:28:34.000000000 +0200
++++ b/zabbix-4.2.6/build/win32/project/Makefile	2019-09-22 19:57:38.727049200 +0200
+@@ -4,6 +4,9 @@
+ all: agent sender get
+ !ENDIF
+ 
++dummy:
++	nmake /f Makefile_dummy
++
+ agent:
+ 	nmake /f Makefile_agent
+ 
+diff -ruaN a/zabbix-4.2.6/build/win32/project/Makefile_agent b/zabbix-4.2.6/build/win32/project/Makefile_agent
+--- a/zabbix-4.2.6/build/win32/project/Makefile_agent	2019-08-26 16:28:34.000000000 +0200
++++ b/zabbix-4.2.6/build/win32/project/Makefile_agent	2019-09-22 19:07:38.978767000 +0200
+@@ -25,7 +25,7 @@
+ 
+ ADD_CFLAGS = $(ADD_CFLAGS) /D WITH_AGENT_METRICS /D WITH_COMMON_METRICS \
+ 	/D WITH_SPECIFIC_METRICS /D WITH_HOSTNAME_METRIC /D WITH_SIMPLE_METRICS \
+-	/Zi /D DEFAULT_CONFIG_FILE="\"C:\\zabbix_agentd.conf\"" \
++	/Zi /D DEFAULT_CONFIG_FILE="\"C:\\zabbix_agentd.conf\"" /D DEFAULT_LOAD_MODULE_PATH="\"C:\\modules\"" \
+ 	/Fd$(TARGETNAME).$(TARGETEXT).pdb
+ 
+ ADD_LFLAGS = $(ADD_LFLAGS) /DEBUG /OPT:REF /DELAYLOAD:wevtapi.dll
+@@ -63,6 +63,7 @@
+ 	..\..\..\src\libs\zbxhttp\http.o \
+ 	..\..\..\src\libs\zbxhttp\punycode.o \
+ 	..\..\..\src\libs\zbxhttp\urlencode.o \
++	..\..\..\src\libs\zbxmodules\modules.o \
+ 	..\..\..\src\libs\zbxsysinfo\agent\agent.o \
+ 	..\..\..\src\libs\zbxsysinfo\common\common.o \
+ 	..\..\..\src\libs\zbxsysinfo\common\cpu.o \
+diff -ruaN a/zabbix-4.2.6/build/win32/project/Makefile_dummy b/zabbix-4.2.6/build/win32/project/Makefile_dummy
+--- a/zabbix-4.2.6/build/win32/project/Makefile_dummy	1970-01-01 01:00:00.000000000 +0100
++++ b/zabbix-4.2.6/build/win32/project/Makefile_dummy	2019-09-22 18:44:25.361444100 +0200
+@@ -0,0 +1,40 @@
++# detect target architecture
++!IF "$(CPU)" == ""
++CPU=$(PROCESSOR_ARCHITECTURE)
++!ENDIF
++
++!IF "$(CPU)" == "i386" || "$(CPU)" == "x86"
++TARGETDIR = ..\..\..\bin\win32
++ADD_LFLAGS = /MACHINE:X86
++
++!ELSEIF "$(CPU)" == "AMD64"
++TARGETDIR = ..\..\..\bin\win64
++ADD_LFLAGS = /MACHINE:X64
++
++!ELSE
++!ERROR Unsupported CPU architecture: $(CPU)
++!ENDIF
++
++PROJECTNAME = dummy
++PROJECTDIR = ..\..\..\src\$(PROJECTNAME)
++TARGETNAME = dummy
++TARGETEXT = dll
++PROGNAME = $(TARGETDIR)\$(TARGETNAME).$(TARGETEXT)
++ADD_CFLAGS = $(ADD_CFLAGS) /D NDEBUG /D ZBX_EXPORT /Fd$(TARGETNAME).$(TARGETEXT).pdb
++ADD_LFLAGS = $(ADD_LFLAGS) /DLL
++ADD_RFLAGS = /d "DUMMY"
++
++!INCLUDE Makefile_common.inc
++
++{..\..\..\src\modules\dummy}.c{..\..\..\src\modules\dummy}.o:
++	$(CC) $? /Fo"$@" $(CFLAGS)
++
++
++OBJS = \
++	..\..\..\src\modules\dummy\dummy.o
++
++LIBS = ws2_32.lib psapi.lib pdh.lib Wldap32.lib advapi32.lib uuid.lib Iphlpapi.lib
++
++!INCLUDE Makefile_pcre.inc
++!INCLUDE Makefile_tls.inc
++!INCLUDE Makefile_targets.inc
+\ No newline at end of file
+diff -ruaN a/zabbix-4.2.6/build/win32/project/Makefile_targets.inc b/zabbix-4.2.6/build/win32/project/Makefile_targets.inc
+--- a/zabbix-4.2.6/build/win32/project/Makefile_targets.inc	2019-08-26 16:28:34.000000000 +0200
++++ b/zabbix-4.2.6/build/win32/project/Makefile_targets.inc	2019-09-22 19:05:49.627180400 +0200
+@@ -52,6 +52,9 @@
+ {..\..\..\src\libs\zbxhttp}.c{..\..\..\src\libs\zbxhttp}.o:
+ 	$(CC) $? /Fo"$@" $(CFLAGS)
+ 
++{..\..\..\src\libs\zbxmodules}.c{..\..\..\src\libs\zbxmodules}.o:
++	$(CC) $? /Fo"$@" $(CFLAGS)
++
+ {..\..\..\src\libs\zbxsysinfo}.c{..\..\..\src\libs\zbxsysinfo}.o:
+ 	$(CC) $? /Fo"$@" $(CFLAGS)
+ 
+diff -ruaN a/zabbix-4.2.6/build/win32/project/resource.h b/zabbix-4.2.6/build/win32/project/resource.h
+--- a/zabbix-4.2.6/build/win32/project/resource.h	2019-08-26 16:28:34.000000000 +0200
++++ b/zabbix-4.2.6/build/win32/project/resource.h	2019-09-22 18:39:27.001409100 +0200
+@@ -13,6 +13,8 @@
+ #	include "zabbix_get_desc.h"
+ #elif defined(ZABBIX_SENDER)
+ #	include "zabbix_sender_desc.h"
++#elif defined(DUMMY)
++#	include "dummy_desc.h"
+ #endif
+ 
+ #define VER_FILEVERSION		ZABBIX_VERSION_MAJOR,ZABBIX_VERSION_MINOR,ZABBIX_VERSION_PATCH,ZABBIX_VERSION_RC_NUM
+diff -ruaN a/zabbix-4.2.6/conf/zabbix_agentd.win.conf b/zabbix-4.2.6/conf/zabbix_agentd.win.conf
+--- a/zabbix-4.2.6/conf/zabbix_agentd.win.conf	2019-08-26 16:28:34.000000000 +0200
++++ b/zabbix-4.2.6/conf/zabbix_agentd.win.conf	2019-09-22 19:59:50.463245000 +0200
+@@ -273,6 +273,30 @@
+ # Default:
+ # UserParameter=
+ 
++####### LOADABLE MODULES #######
++
++### Option: LoadModulePath
++#	Full path to location of agent modules.
++#	Default depends on compilation options.
++#	To see the default path run command "zabbix_agentd --help".
++#
++# Mandatory: no
++# Default:
++# LoadModulePath=c:\modules
++
++### Option: LoadModule
++#	Module to load at agent startup. Modules are used to extend functionality of the agent.
++#	Formats:
++#		LoadModule=<dummy.dll>
++#		LoadModule=<relative_path\dummy.dll>
++#	Either the module must be located in directory specified by LoadModulePath or the path must precede the module name.
++#	Absolute path preceding the module name is not supported, use LoadModulePath in this case.
++#	It is allowed to include multiple LoadModule parameters.
++#
++# Mandatory: no
++# Default:
++# LoadModule=
++
+ ####### TLS-RELATED PARAMETERS #######
+ 
+ ### Option: TLSConnect
+diff -ruaN a/zabbix-4.2.6/include/module.h b/zabbix-4.2.6/include/module.h
+--- a/zabbix-4.2.6/include/module.h	2019-08-26 16:28:34.000000000 +0200
++++ b/zabbix-4.2.6/include/module.h	2019-09-22 19:23:56.155667000 +0200
+@@ -20,6 +20,14 @@
+ #ifndef ZABBIX_MODULE_H
+ #define ZABBIX_MODULE_H
+ 
++#ifdef _WINDOWS
++	#include <windows.h>
++	#define DLL_EXPORT __declspec(dllexport)
++#else
++	#define DLL_EXPORT
++#endif
++
++
+ #include "zbxtypes.h"
+ 
+ #define ZBX_MODULE_OK	0
+@@ -203,11 +211,11 @@
+ }
+ ZBX_HISTORY_WRITE_CBS;
+ 
+-int	zbx_module_api_version(void);
+-int	zbx_module_init(void);
+-int	zbx_module_uninit(void);
+-void	zbx_module_item_timeout(int timeout);
+-ZBX_METRIC	*zbx_module_item_list(void);
+-ZBX_HISTORY_WRITE_CBS	zbx_module_history_write_cbs(void);
++DLL_EXPORT int	zbx_module_api_version(void);
++DLL_EXPORT int	zbx_module_init(void);
++DLL_EXPORT int	zbx_module_uninit(void);
++DLL_EXPORT void	zbx_module_item_timeout(int timeout);
++DLL_EXPORT ZBX_METRIC	*zbx_module_item_list(void);
++DLL_EXPORT ZBX_HISTORY_WRITE_CBS	zbx_module_history_write_cbs(void);
+ 
+ #endif
+diff -ruaN a/zabbix-4.2.6/src/libs/zbxmodules/modules.c b/zabbix-4.2.6/src/libs/zbxmodules/modules.c
+--- a/zabbix-4.2.6/src/libs/zbxmodules/modules.c	2019-08-26 16:28:35.000000000 +0200
++++ b/zabbix-4.2.6/src/libs/zbxmodules/modules.c	2019-09-22 19:33:39.285681200 +0200
+@@ -25,6 +25,47 @@
+ #include "sysinfo.h"
+ #include "zbxalgo.h"
+ 
++#ifdef _WINDOWS
++#include <windows.h>
++#define RTLD_NOW 	2
++
++void* dlopen(const char * filename, int flag)
++{
++	return (void*) LoadLibraryA(filename);
++}
++
++void dlclose(void * handle)
++{
++	FreeLibrary((HINSTANCE)handle);
++}
++
++//Returns the last Win32 error, in string format. Returns an empty string if there is no error.
++char* GetLastErrorAsString()
++{
++	//Get the error message, if any.
++	DWORD errorMessageID = GetLastError();
++	if(errorMessageID == 0)
++		return ""; //No error message has been recorded
++
++	LPSTR messageBuffer = NULL;
++	size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
++								 NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
++
++	return messageBuffer;
++}
++
++char* dlerror(void)
++{
++	return (char *)GetLastErrorAsString();
++}
++
++void* dlsym(void *handle, const char *symbol)
++{
++	return (void*)GetProcAddress((HINSTANCE)handle, symbol);
++}
++#endif
++
++
+ #define ZBX_MODULE_FUNC_INIT			"zbx_module_init"
+ #define ZBX_MODULE_FUNC_API_VERSION		"zbx_module_api_version"
+ #define ZBX_MODULE_FUNC_ITEM_LIST		"zbx_module_item_list"
+diff -ruaN a/zabbix-4.2.6/src/zabbix_agent/zabbix_agentd.c b/zabbix-4.2.6/src/zabbix_agent/zabbix_agentd.c
+--- a/zabbix-4.2.6/src/zabbix_agent/zabbix_agentd.c	2019-08-26 16:28:35.000000000 +0200
++++ b/zabbix-4.2.6/src/zabbix_agent/zabbix_agentd.c	2019-09-22 19:00:28.066569500 +0200
+@@ -79,9 +79,9 @@
+ 
+ #ifndef _WINDOWS
+ #	include "../libs/zbxnix/control.h"
+-#	include "zbxmodules.h"
+ #endif
+ 
++#include "zbxmodules.h"
+ #include "comms.h"
+ #include "alias.h"
+ 
+@@ -185,11 +185,9 @@
+ 	"  -h --help                      Display this help message",
+ 	"  -V --version                   Display version number",
+ 	"",
+-#ifndef _WINDOWS
+ 	"Default loadable module location:",
+ 	"  LoadModulePath                 \"" DEFAULT_LOAD_MODULE_PATH "\"",
+ 	"",
+-#endif
+ #ifdef _WINDOWS
+ 	"Example: zabbix_agentd -c C:\\zabbix\\zabbix_agentd.conf",
+ #else
+@@ -574,10 +572,10 @@
+ 				CONFIG_HOST_METADATA);
+ 	}
+ 
+-#ifndef _WINDOWS
+ 	if (NULL == CONFIG_LOAD_MODULE_PATH)
+ 		CONFIG_LOAD_MODULE_PATH = zbx_strdup(CONFIG_LOAD_MODULE_PATH, DEFAULT_LOAD_MODULE_PATH);
+ 
++#ifndef _WINDOWS
+ 	if (NULL == CONFIG_PID_FILE)
+ 		CONFIG_PID_FILE = (char *)"/tmp/zabbix_agentd.pid";
+ #endif
+@@ -754,11 +752,11 @@
+ 			PARM_OPT,	0,			0},
+ 		{"UserParameter",		&CONFIG_USER_PARAMETERS,		TYPE_MULTISTRING,
+ 			PARM_OPT,	0,			0},
+-#ifndef _WINDOWS
+ 		{"LoadModulePath",		&CONFIG_LOAD_MODULE_PATH,		TYPE_STRING,
+ 			PARM_OPT,	0,			0},
+ 		{"LoadModule",			&CONFIG_LOAD_MODULE,			TYPE_MULTISTRING,
+ 			PARM_OPT,	0,			0},
++#ifndef _WINDOWS
+ 		{"AllowRoot",			&CONFIG_ALLOW_ROOT,			TYPE_INT,
+ 			PARM_OPT,	0,			1},
+ 		{"User",			&CONFIG_USER,				TYPE_STRING,
+@@ -794,9 +792,7 @@
+ 	/* initialize multistrings */
+ 	zbx_strarr_init(&CONFIG_ALIASES);
+ 	zbx_strarr_init(&CONFIG_USER_PARAMETERS);
+-#ifndef _WINDOWS
+ 	zbx_strarr_init(&CONFIG_LOAD_MODULE);
+-#endif
+ #ifdef _WINDOWS
+ 	zbx_strarr_init(&CONFIG_PERF_COUNTERS);
+ #endif
+@@ -833,9 +829,7 @@
+ {
+ 	zbx_strarr_free(CONFIG_ALIASES);
+ 	zbx_strarr_free(CONFIG_USER_PARAMETERS);
+-#ifndef _WINDOWS
+ 	zbx_strarr_free(CONFIG_LOAD_MODULE);
+-#endif
+ #ifdef _WINDOWS
+ 	zbx_strarr_free(CONFIG_PERF_COUNTERS);
+ #endif
+@@ -926,13 +920,12 @@
+ 		exit(EXIT_FAILURE);
+ 	}
+ #endif
+-#ifndef _WINDOWS
+ 	if (FAIL == zbx_load_modules(CONFIG_LOAD_MODULE_PATH, CONFIG_LOAD_MODULE, CONFIG_TIMEOUT, 1))
+ 	{
+ 		zabbix_log(LOG_LEVEL_CRIT, "loading modules failed, exiting...");
+ 		exit(EXIT_FAILURE);
+ 	}
+-#endif
++
+ 	if (0 != CONFIG_PASSIVE_FORKS)
+ 	{
+ 		if (FAIL == zbx_tcp_listen(&listen_sock, CONFIG_LISTEN_IP, (unsigned short)CONFIG_LISTEN_PORT))
+@@ -1087,9 +1080,7 @@
+ 	free_perf_collector();
+ 	zbx_co_uninitialize();
+ #endif
+-#ifndef _WINDOWS
+ 	zbx_unload_modules();
+-#endif
+ 	zabbix_log(LOG_LEVEL_INFORMATION, "Zabbix Agent stopped. Zabbix %s (revision %s).",
+ 			ZABBIX_VERSION, ZABBIX_REVISION);
+ 
+@@ -1207,13 +1198,12 @@
+ #else
+ 			zbx_set_common_signal_handlers();
+ #endif
+-#ifndef _WINDOWS
+ 			if (FAIL == zbx_load_modules(CONFIG_LOAD_MODULE_PATH, CONFIG_LOAD_MODULE, CONFIG_TIMEOUT, 0))
+ 			{
+ 				zabbix_log(LOG_LEVEL_CRIT, "loading modules failed, exiting...");
+ 				exit(EXIT_FAILURE);
+ 			}
+-#endif
++
+ 			load_user_parameters(CONFIG_USER_PARAMETERS);
+ 			load_aliases(CONFIG_ALIASES);
+ 			zbx_free_config();
+@@ -1227,9 +1217,7 @@
+ 			while (0 == WSACleanup())
+ 				;
+ #endif
+-#ifndef _WINDOWS
+ 			zbx_unload_modules();
+-#endif
+ 			free_metrics();
+ 			alias_list_free();
+ 			exit(EXIT_SUCCESS);
