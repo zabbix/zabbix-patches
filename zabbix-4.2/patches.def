@@ -2,3 +2,6 @@ id|type|details
 1|name|ZBX-12423
 1|desc|Improve WEB UI - Show Server Name instead of server in the right corner of UI
 1|ltr|1
+2|name|ZBXNEXT-2201
+2|desc|Add support for loadable modules for windows agents
+2|ltr|1

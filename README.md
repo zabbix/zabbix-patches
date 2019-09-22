@@ -109,6 +109,8 @@ Please, vote for ZBXNEXT you're using or just care about - that could help to so
 
 [ZBX-12423](https://support.zabbix.com/browse/ZBX-12423): Improve WEB UI - Show Server Name instead of server in the right corner of UI.
 
+[ZBXNEXT-2201](https://support.zabbix.com/browse/ZBXNEXT-2201): Add support for loadable modules for windows agents
+
 ### Zabbix **4.4**
 
 [ZBX-12423](https://support.zabbix.com/browse/ZBX-12423): Improve WEB UI - Show Server Name instead of server in the right corner of UI.
